@@ -18,11 +18,22 @@ qt_add_executable(LiteChatClient
     src/mainwindow.cpp
     src/networkmanager.cpp
     src/connectdialog.cpp
+    src/usermanager.cpp
+    src/logindialog.cpp
+    src/registerdialog.cpp
+    src/userinfodialog.cpp
     header/mainwindow.h
     header/networkmanager.h
     header/connectdialog.h
+    header/usermanager.h
+    header/logindialog.h
+    header/registerdialog.h
+    header/userinfodialog.h
     ui/mainwindow.ui
     ui/connectdialog.ui
+    ui/logindialog.ui
+    ui/registerdialog.ui
+    ui/userinfodialog.ui
 )
 
 # 项目链接存放代码文件父层级（需要链接别的存放代码父层级，照例添加即可）
