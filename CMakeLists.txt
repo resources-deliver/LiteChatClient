@@ -13,7 +13,8 @@ qt_standard_project_setup()
 # 生成的可执行文件名称、GUI程序、链接源文件列表
 # 此时cpp、h、ui文件链接的头文件路径无需更改，只需要将文件移入对应路径下
 qt_add_executable(LiteChatClient
-    WIN32 MACOSX_BUNDLE
+    # WIN32 MACOSX_BUNDLE  # qDebug在终端无效
+    MACOSX_BUNDLE
     src/main.cpp
     src/mainwindow.cpp
     src/networkmanager.cpp

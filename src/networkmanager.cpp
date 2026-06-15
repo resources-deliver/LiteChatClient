@@ -81,19 +81,24 @@ bool NetworkManager::IsConnected() const{
  * @return 是否发送成功
  */
 bool NetworkManager::SendData(const QByteArray& data){
+    qDebug() << "SendData called, isConnected:" << isConnected;
+    qDebug() << "Data content:" << data;
     if(!isConnected){
         emit ErrorOccurred("未连接到服务器");
         return false;
     }
 
     QByteArray package = PackageMessage(data);
+    qDebug() << "Sending data, size:" << package.size();
     qint64 bytesWritten = socket->write(package);
     if(bytesWritten == -1){
         emit ErrorOccurred("发送数据失败");
         return false;
     }
 
-    return socket->waitForBytesWritten(timeout * 1000);
+    bool result = socket->waitForBytesWritten(timeout * 1000);
+    qDebug() << "SendData result:" << result << "bytesWritten:" << bytesWritten;
+    return result;
 }
 
 /**

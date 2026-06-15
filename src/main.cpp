@@ -29,7 +29,7 @@ int main(int argc, char *argv[])
                 w.show();
                 return QApplication::exec();
             }
-            else if (loginResult == 1)
+            else if (loginResult == 2)
             {
                 RegisterDialog registerDlg(&userManager);
                 int registerResult = registerDlg.exec();

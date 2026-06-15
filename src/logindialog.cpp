@@ -168,7 +168,7 @@ void LoginDialog::OnRegisterClicked()
         return;
     }
 
-    done(1);
+    done(2);
 }
 
 /**
