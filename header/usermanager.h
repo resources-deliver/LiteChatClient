@@ -54,9 +54,9 @@ private:
     void HandleStatusResponse(const QJsonObject& response);
 
 private:
-    NetworkManager* networkManager;
-    QString currentUsername;
-    UserStatus currentUserStatus;
+    NetworkManager* networkManager;  // 网络管理器的指针
+    QString currentUsername;  // 当前登录用户的用户名
+    UserStatus currentUserStatus;  // 当前登录用户的状态
 };
 
 #endif // USERMANAGER_H

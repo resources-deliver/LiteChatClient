@@ -7,44 +7,32 @@
 
 #include <QApplication>
 
-int main(int argc, char *argv[])
-{
+int main(int argc, char *argv[]){
     QApplication a(argc, argv);
-
     NetworkManager networkManager;
     UserManager userManager(&networkManager);
-
     ConnectDialog connectDlg(&networkManager);
 
-    if (connectDlg.exec() == QDialog::Accepted)
-    {
-        while (true)
-        {
+    if(connectDlg.exec() == QDialog::Accepted){
+        while(true){
             LoginDialog loginDlg(&userManager);
             int loginResult = loginDlg.exec();
-
-            if (loginResult == QDialog::Accepted)
-            {
+            if(loginResult == QDialog::Accepted){
                 MainWindow w;
                 w.show();
                 return QApplication::exec();
             }
-            else if (loginResult == 2)
-            {
+            else if(loginResult == 2){
                 RegisterDialog registerDlg(&userManager);
                 int registerResult = registerDlg.exec();
-
-                if (registerResult == 0)
-                {
+                if(registerResult == 0){
                     loginDlg.SetUsername(registerDlg.GetRegisteredUsername());
                 }
             }
-            else
-            {
+            else{
                 break;
             }
         }
     }
-
     return 0;
 }

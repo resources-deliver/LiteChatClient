@@ -20,6 +20,6 @@ public:
     ~MainWindow() override;
 
 private:
-    Ui::MainWindow *ui;
+    Ui::MainWindow *ui;  // 主窗口（UI界面）的指针
 };
 #endif // MAINWINDOW_H

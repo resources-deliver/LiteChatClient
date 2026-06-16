@@ -39,12 +39,12 @@ private:
     QByteArray PackageMessage(const QByteArray& body);
 
 private:
-    QTcpSocket* socket;
-    QString serverIP;
-    int serverPort;
-    bool isConnected;
-    int timeout;
-    QByteArray receiveBuffer;
+    QTcpSocket* socket;  // TCP套接字的指针
+    QString serverIP;  // 服务器IP地址
+    int serverPort;    // 服务器端口号
+    bool isConnected;  // 连接状态
+    int timeout;       // 连接超时时间（秒）
+    QByteArray receiveBuffer;  // 接收缓冲区
 };
 
 #endif // NETWORKMANAGER_H
