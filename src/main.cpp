@@ -7,44 +7,46 @@
 
 #include <QApplication>
 
-int main(int argc, char *argv[])
-{
-    QApplication a(argc, argv);
+#ifdef Q_OS_WIN
+#include <windows.h>
+#endif
 
+void customMessageHandler(QtMsgType type, const QMessageLogContext &context, const QString &msg){
+    QByteArray localMsg = msg.toUtf8();
+    fprintf(stderr, "%s\n", localMsg.constData());
+    fflush(stderr);
+}
+
+int main(int argc, char *argv[]){
+#ifdef Q_OS_WIN
+    SetConsoleOutputCP(CP_UTF8);
+#endif
+    QApplication a(argc, argv);
+    qInstallMessageHandler(customMessageHandler);
     NetworkManager networkManager;
     UserManager userManager(&networkManager);
-
     ConnectDialog connectDlg(&networkManager);
 
-    if (connectDlg.exec() == QDialog::Accepted)
-    {
-        while (true)
-        {
+    if(connectDlg.exec() == QDialog::Accepted){
+        while(true){
             LoginDialog loginDlg(&userManager);
             int loginResult = loginDlg.exec();
-
-            if (loginResult == QDialog::Accepted)
-            {
-                MainWindow w;
-                w.show();
+            if(loginResult == QDialog::Accepted){
+                MainWindow* w = new MainWindow(&networkManager, &userManager);
+                w->show();
                 return QApplication::exec();
             }
-            else if (loginResult == 1)
-            {
+            else if(loginResult == 2){
                 RegisterDialog registerDlg(&userManager);
                 int registerResult = registerDlg.exec();
-
-                if (registerResult == 0)
-                {
+                if(registerResult == 0){
                     loginDlg.SetUsername(registerDlg.GetRegisteredUsername());
                 }
             }
-            else
-            {
+            else{
                 break;
             }
         }
     }
-
     return 0;
 }

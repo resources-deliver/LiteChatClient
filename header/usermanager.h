@@ -52,11 +52,12 @@ private:
     void HandleLoginResponse(const QJsonObject& response);
     void HandleUpdateResponse(const QJsonObject& response);
     void HandleStatusResponse(const QJsonObject& response);
+    void HandleStatusNotify(const QJsonObject& notify);
 
 private:
-    NetworkManager* networkManager;
-    QString currentUsername;
-    UserStatus currentUserStatus;
+    NetworkManager* networkManager;  // 网络管理器的指针
+    QString currentUsername;  // 当前登录用户的用户名
+    UserStatus currentUserStatus;  // 当前登录用户的状态
 };
 
 #endif // USERMANAGER_H

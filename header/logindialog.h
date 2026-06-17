@@ -33,10 +33,10 @@ private:
     void ShowBusyMessage();
 
 private:
-    Ui::LoginDialog *ui;
-    UserManager* userManager;
-    bool isProcessing;
-    QTimer* timeoutTimer;
+    Ui::LoginDialog *ui;  // 登录对话框（UI界面）的指针
+    UserManager* userManager;  // 用户管理器的指针
+    bool isProcessing;  // 登录请求状态
+    QTimer* timeoutTimer;  // 时间定时器的指针
 };
 
 #endif // LOGINDIALOG_H

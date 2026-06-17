@@ -34,11 +34,11 @@ private:
     void PerformConnection(const QString& ip);
 
 private:
-    Ui::ConnectDialog *ui;
-    NetworkManager* networkManager;
-    bool isProcessing;
-    static constexpr const char* DEFAULT_IP = "192.168.162.128";
-    QTimer* timeoutTimer;
+    Ui::ConnectDialog *ui;  // 连接对话框（UI界面）的指针
+    NetworkManager* networkManager;  // 网络管理器的指针
+    bool isProcessing;  // 连接请求状态
+    static constexpr const char* DEFAULT_IP = "192.168.162.128";  // 静态默认（服务器端）的IP地址
+    QTimer* timeoutTimer;  // 时间定时器的指针
 };
 
 #endif // CONNECTDIALOG_H
