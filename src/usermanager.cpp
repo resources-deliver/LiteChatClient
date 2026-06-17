@@ -93,6 +93,7 @@ bool UserManager::LoginUser(const QString& username, const QString& password){
     requestObj["data"] = dataObj;  // 设置请求数据
     QJsonDocument doc(requestObj);  // 将请求对象转换为JSON文档
     QByteArray requestData = doc.toJson(QJsonDocument::Compact);  // 将JSON文档转换为字节数组
+    currentUsername = username;  // 设置当前登录用户名
     bool sendResult = networkManager->SendData(requestData);  // 发送请求数据
     if(!sendResult){  // 如果发送失败
         qDebug() << "[UserManager::LoginUser]发送请求失败";  // Debug输出
@@ -247,21 +248,29 @@ void UserManager::OnDataReceived(const QByteArray& data){
     QJsonParseError parseError;
     QJsonDocument doc = QJsonDocument::fromJson(data, &parseError);
     if(parseError.error != QJsonParseError::NoError){
+        qDebug() << "[UserManager::OnDataReceived]JSON解析失败" << parseError.errorString();  // Debug输出
         return;
     }
     QJsonObject response = doc.object();
     QString type = response["type"].toString();
-    if(type == "REGISTER"){
+    qDebug() << "[UserManager::OnDataReceived]接收到响应数据，类型:" << type;  // Debug输出
+    if(type == "REGISTER_RESPONSE"){
         HandleRegisterResponse(response);
     }
-    else if(type == "LOGIN"){
+    else if(type == "LOGIN_RESPONSE"){
         HandleLoginResponse(response);
     }
-    else if(type == "UPDATE_USER"){
+    else if(type == "UPDATE_USER_RESPONSE"){
         HandleUpdateResponse(response);
     }
-    else if(type == "QUERY_STATUS"){
+    else if(type == "QUERY_STATUS_RESPONSE"){
         HandleStatusResponse(response);
+    }
+    else if(type == "STATUS_NOTIFY"){
+        HandleStatusNotify(response);
+    }
+    else{
+        qDebug() << "[UserManager::OnDataReceived]未知的响应类型:" << type;  // Debug输出
     }
 }
 
@@ -301,7 +310,6 @@ void UserManager::HandleLoginResponse(const QJsonObject& response){
     int code = response["code"].toInt();
     switch(code){
         case 0:
-            currentUsername = response["data"].toObject()["username"].toString();
             emit LoginSuccess();
             break;
         case 1002:
@@ -371,5 +379,25 @@ void UserManager::HandleStatusResponse(const QJsonObject& response){
     }
     else if(code == 5001){
         emit UpdateFailed("服务器罢工了...");
+    }
+}
+
+/**
+ * @brief 处理状态变更通知
+ * @param notify 通知JSON对象
+ */
+void UserManager::HandleStatusNotify(const QJsonObject& notify){
+    QJsonObject data = notify["data"].toObject();
+    QString username = data["username"].toString();
+    QString status = data["status"].toString();
+    qDebug() << "[UserManager::HandleStatusNotify]收到状态变更通知，用户名:" << username << "，状态:" << status;  // Debug输出
+    if(username == currentUsername){
+        if(status == "online"){
+            currentUserStatus = UserStatus::Online;
+        }
+        else{
+            currentUserStatus = UserStatus::Offline;
+        }
+        emit StatusChanged(currentUserStatus);
     }
 }

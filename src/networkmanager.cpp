@@ -17,7 +17,7 @@ NetworkManager::NetworkManager(QObject *parent)
 {
     // 连接成功后，自动触发自带的信号，自动调用槽函数
     connect(socket, &QTcpSocket::connected, this, &NetworkManager::OnConnected);
-    // 连接失败后，自动触发自带的信号，自动调用槽函数
+    // 连接断开后，自动触发自带的信号，自动调用槽函数
     connect(socket, &QTcpSocket::disconnected, this, &NetworkManager::OnDisconnected);
     // 数据可读时，自动触发自带的信号，自动调用槽函数
     connect(socket, &QTcpSocket::readyRead, this, &NetworkManager::OnReadyRead);
@@ -49,7 +49,7 @@ bool NetworkManager::ConnectToServer(const QString& ip, int port){
     socket->connectToHost(QHostAddress(ip), port);  // 连接到服务器
     bool result = socket->waitForConnected(timeout * 1000);  // 等待连接成功
     if(!result){  // 如果连接超时
-        qDebug() << "[NetworkManager::ConnectToServer]连接超时IP地址:" << ip;  // Debug输出
+        qDebug() << "[NetworkManager::ConnectToServer]连接超时";
         emit ErrorOccurred("连接超时");  // 手动触发自定义错误信号
         return false;
     }
@@ -125,13 +125,12 @@ void NetworkManager::OnConnected(){
 }
 
 /**
- * @brief 连接失败后，自动触发自带的信号，自动调用槽函数
+ * @brief 连接断开后，自动触发自带的信号，自动调用槽函数
  */
 void NetworkManager::OnDisconnected(){
     isConnected = false;  // 设置连接状态
     receiveBuffer.clear();  // 清空接收缓冲区
-    qDebug() << "[NetworkManager::OnDisconnected]连接失败";  // Debug输出
-    emit Disconnected();  // 手动触发自定义连接失败信号
+    qDebug() << "[NetworkManager::OnDisconnected]连接断开";  // Debug输出
 }
 
 /**
@@ -185,7 +184,7 @@ void NetworkManager::OnError(QAbstractSocket::SocketError socketError){
             errorMsg = socket->errorString();
             break;
     }
-    qDebug() << "[NetworkManager::OnError]错误信息:" << errorMsg;  // Debug输出
+    qDebug() << "[NetworkManager::OnError]连接错误后自动调用槽函数, 错误信息: " << errorMsg;
     emit ErrorOccurred(errorMsg);  // 手动触发自定义错误信号
 }
 

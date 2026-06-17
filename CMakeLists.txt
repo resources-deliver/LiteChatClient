@@ -59,6 +59,10 @@ target_link_libraries(LiteChatClient
         Qt::Network
 )
 
+if(MSVC)
+    target_compile_options(LiteChatClient PRIVATE /utf-8)
+endif()
+
 # 安装规则
 install(TARGETS LiteChatClient
     BUNDLE  DESTINATION .

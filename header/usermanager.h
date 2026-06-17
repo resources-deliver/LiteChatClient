@@ -52,6 +52,7 @@ private:
     void HandleLoginResponse(const QJsonObject& response);
     void HandleUpdateResponse(const QJsonObject& response);
     void HandleStatusResponse(const QJsonObject& response);
+    void HandleStatusNotify(const QJsonObject& notify);
 
 private:
     NetworkManager* networkManager;  // 网络管理器的指针

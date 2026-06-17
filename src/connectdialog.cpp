@@ -119,33 +119,34 @@ void ConnectDialog::ShowBusyMessage(){
 }
 
 /**
- * @brief 执行连接操作
+ * @brief 执行连接请求操作
  * @param ip 服务器IP地址
  */
 void ConnectDialog::PerformConnection(const QString& ip){
     if(isProcessing){  // 如果正在处理连接请求
+        qDebug() << "[ConnectDialog::PerformConnection]已经正在处理连接请求";
         ShowBusyMessage();  // 信息弹窗
         return;
     }
-
     if(!ValidateIP(ip)){  // 如果IP地址格式不符合要求
+        qDebug() << "[ConnectDialog::PerformConnection]IP地址格式不符合要求";
         QMessageBox::warning(this, "错误", "IP地址不符合格式");  // 错误弹窗
         return;
     }
-
     isProcessing = true;  // 设置连接请求状态
     ui->connectButton->setEnabled(false);  // 禁用连接按钮
     ui->skipButton->setEnabled(false);  // 禁用跳过按钮
     timeoutTimer->start(5000);  // 启动5秒时间定时器
-    bool result = networkManager->ConnectToServer(ip, 8886);  // 连接服务器
+    bool result = networkManager->ConnectToServer(ip, 8886);  // 连接到服务器
     if(!result){  // 如果连接失败
         timeoutTimer->stop();  // 停止时间定时器
         isProcessing = false;  // 设置连接请求状态
         ui->connectButton->setEnabled(true);  // 启用连接按钮
         ui->skipButton->setEnabled(true);  // 启用跳过按钮
-        qDebug() << "[ConnectDialog::PerformConnection]连接失败IP地址:" << ip;  // Debug输出
+        qDebug() << "[ConnectDialog::PerformConnection]连接服务器请求失败";
+        return;
     }
-    qDebug() << "[ConnectDialog::PerformConnection]连接成功IP地址:" << ip;  // Debug输出
+    qDebug() << "[ConnectDialog::PerformConnection]连接服务器请求成功";
 }
 
 /**
@@ -153,16 +154,13 @@ void ConnectDialog::PerformConnection(const QString& ip){
  */
 void ConnectDialog::OnConnectClicked(){
     QString ip = ui->ipLineEdit->text().trimmed();  // 获取IP地址输入框中的文本并去掉首尾空格
-    if(ip == DEFAULT_IP){  // 如果输入框IP地址与默认IP地址相同
-        PerformConnection(ip);  // 执行连接操作
-        return;
-    }
     if(ip.isEmpty()){  // 如果输入框IP地址为空
+        qDebug() << "[ConnectDialog::OnConnectClicked]输入框IP地址为空";
         QMessageBox::warning(this, "错误", "请输入服务器IP地址");  // 错误弹窗
         return;
     }
     qDebug() << "[ConnectDialog::OnConnectClicked]连接按钮被点击后自动调用槽函数";  // Debug输出
-    PerformConnection(ip);  // 执行连接操作
+    PerformConnection(ip);  // 执行连接请求操作
 }
 
 /**
@@ -170,7 +168,7 @@ void ConnectDialog::OnConnectClicked(){
  */
 void ConnectDialog::OnSkipClicked(){
     qDebug() << "[ConnectDialog::OnSkipClicked]跳过按钮被点击后自动调用槽函数";  // Debug输出
-    PerformConnection(DEFAULT_IP);  // 执行连接操作
+    PerformConnection(DEFAULT_IP);  // 执行连接请求操作
 }
 
 /**
@@ -217,5 +215,5 @@ void ConnectDialog::OnError(const QString& errorMsg){
     else{
         QMessageBox::warning(this, "错误", errorMsg);
     }
-    qDebug() << "[ConnectDialog::OnError]连接错误后自动调用槽函数" << errorMsg;  // Debug输出
+    qDebug() << "[ConnectDialog::OnError]连接错误后自动调用槽函数, 错误信息: " << errorMsg;
 }
