@@ -23,6 +23,8 @@ qt_add_executable(LiteChatClient
     src/logindialog.cpp
     src/registerdialog.cpp
     src/userinfodialog.cpp
+    src/friendmanager.cpp
+    src/searchresultdialog.cpp
     header/mainwindow.h
     header/networkmanager.h
     header/connectdialog.h
@@ -30,6 +32,8 @@ qt_add_executable(LiteChatClient
     header/logindialog.h
     header/registerdialog.h
     header/userinfodialog.h
+    header/friendmanager.h
+    header/searchresultdialog.h
     ui/mainwindow.ui
     ui/connectdialog.ui
     ui/logindialog.ui

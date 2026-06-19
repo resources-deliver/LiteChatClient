@@ -4,6 +4,7 @@
 #include "registerdialog.h"
 #include "networkmanager.h"
 #include "usermanager.h"
+#include "friendmanager.h"
 
 #include <QApplication>
 
@@ -25,6 +26,7 @@ int main(int argc, char *argv[]){
     qInstallMessageHandler(customMessageHandler);
     NetworkManager networkManager;
     UserManager userManager(&networkManager);
+    FriendManager friendManager(&networkManager);
     ConnectDialog connectDlg(&networkManager);
 
     if(connectDlg.exec() == QDialog::Accepted){
@@ -32,7 +34,7 @@ int main(int argc, char *argv[]){
             LoginDialog loginDlg(&userManager);
             int loginResult = loginDlg.exec();
             if(loginResult == QDialog::Accepted){
-                MainWindow* w = new MainWindow(&networkManager, &userManager);
+                MainWindow* w = new MainWindow(&networkManager, &userManager, &friendManager);
                 w->show();
                 return QApplication::exec();
             }
