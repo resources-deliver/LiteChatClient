@@ -131,6 +131,24 @@ void LoginDialog::ShowBusyMessage(){
 }
 
 /**
+ * @brief 按键事件处理，实现Enter键导航
+ * @param event 按键事件
+ */
+void LoginDialog::keyPressEvent(QKeyEvent* event){
+    if(event->key() == Qt::Key_Return || event->key() == Qt::Key_Enter){
+        if(ui->usernameLineEdit->hasFocus()){
+            ui->passwordLineEdit->setFocus();
+            return;
+        }
+        if(ui->passwordLineEdit->hasFocus()){
+            OnLoginClicked();
+            return;
+        }
+    }
+    QDialog::keyPressEvent(event);
+}
+
+/**
  * @brief 登录按钮被点击后，自动触发自带的信号，自动调用槽函数
  */
 void LoginDialog::OnLoginClicked(){

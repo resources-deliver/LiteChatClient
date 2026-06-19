@@ -3,6 +3,7 @@
 #include "usermanager.h"
 
 #include <QMessageBox>
+#include <QKeyEvent>
 #include <QDebug>
 
 /**
@@ -145,6 +146,28 @@ void RegisterDialog::ShowBusyMessage(){
 }
 
 /**
+ * @brief 按键事件处理，实现Enter键导航
+ * @param event 按键事件
+ */
+void RegisterDialog::keyPressEvent(QKeyEvent* event){
+    if(event->key() == Qt::Key_Return || event->key() == Qt::Key_Enter){
+        if(ui->usernameLineEdit->hasFocus()){
+            ui->passwordLineEdit->setFocus();
+            return;
+        }
+        if(ui->passwordLineEdit->hasFocus()){
+            ui->confirmPasswordLineEdit->setFocus();
+            return;
+        }
+        if(ui->confirmPasswordLineEdit->hasFocus()){
+            OnRegisterClicked();
+            return;
+        }
+    }
+    QDialog::keyPressEvent(event);
+}
+
+/**
  * @brief 注册按钮被点击后，自动触发自带的信号，自动调用槽函数
  */
 void RegisterDialog::OnRegisterClicked(){
@@ -157,7 +180,7 @@ void RegisterDialog::OnRegisterClicked(){
     QString password = ui->passwordLineEdit->text();  // 获取密码文本框内容
     QString confirmPassword = ui->confirmPasswordLineEdit->text();  // 获取确认密码文本框内容
 
-    if(username.isEmpty() || password.isEmpty()){  // 如果用户名或密码为空
+    if(username.isEmpty() || password.isEmpty() || confirmPassword.isEmpty()){  // 如果用户名或密码或确认密码为空
         QMessageBox::warning(this, "错误", "用户名或密码不能为空");  // 错误弹窗
         return;
     }

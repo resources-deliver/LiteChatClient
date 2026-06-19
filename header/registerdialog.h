@@ -31,6 +31,7 @@ private slots:
 private:
     void SetupUI();
     void ShowBusyMessage();
+    void keyPressEvent(QKeyEvent* event) override;
 
 private:
     Ui::RegisterDialog *ui;  // 注册对话框（UI界面）的指针

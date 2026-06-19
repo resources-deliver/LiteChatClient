@@ -131,6 +131,7 @@ void NetworkManager::OnDisconnected(){
     isConnected = false;  // 设置连接状态
     receiveBuffer.clear();  // 清空接收缓冲区
     qDebug() << "[NetworkManager::OnDisconnected]连接断开";  // Debug输出
+    emit Disconnected();  // 手动触发自定义断开连接信号
 }
 
 /**
