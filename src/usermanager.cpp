@@ -34,15 +34,13 @@ UserManager::~UserManager(){}
  */
 bool UserManager::RegisterUser(const QString& username, const QString& password){
     bool result = ValidateUsername(username);  // 验证用户名格式
-    if(!result){  // 如果用户名不符合格式
-        qDebug() << "[UserManager::RegisterUser]用户名不符合格式";  // Debug输出
+    if(!result){
         emit RegisterFailed("用户名不符合格式");  // 手动触发自定义注册失败信号
         return false;
     }
     result = ValidatePassword(password);  // 验证密码长度
-    if(!result){  // 如果密码长度不符合要求
-        qDebug() << "[UserManager::RegisterUser]密码长度至少为6位";  // Debug输出
-        emit RegisterFailed("密码长度至少为6位");  // 手动触发自定义注册失败信号
+    if(!result){
+        emit RegisterFailed("密码长度至少为6位");
         return false;
     }
     QString encryptedPassword = EncryptPassword(password);  // 加密密码
@@ -55,13 +53,11 @@ bool UserManager::RegisterUser(const QString& username, const QString& password)
     QJsonDocument doc(requestObj);  // 将请求对象转换为JSON文档
     QByteArray requestData = doc.toJson(QJsonDocument::Compact);  // 将JSON文档转换为字节数组
     bool sendResult = networkManager->SendData(requestData);  // 发送请求数据
-    if(!sendResult){  // 如果发送失败
-        qDebug() << "[UserManager::RegisterUser]发送请求失败";  // Debug输出
-        emit RegisterFailed("发送请求失败");  // 手动触发自定义注册失败信号
+    if(!sendResult){
+        emit RegisterFailed("注册失败");
         return false;
     }
-    qDebug() << "[UserManager::RegisterUser]发送请求成功";  // Debug输出
-    // emit RegisterSuccess();  // 手动触发自定义注册成功信号
+    emit RegisterSuccess();  // 手动触发自定义注册成功信号
     return true;
 }
 
@@ -73,15 +69,13 @@ bool UserManager::RegisterUser(const QString& username, const QString& password)
  */
 bool UserManager::LoginUser(const QString& username, const QString& password){
     bool result = ValidateUsername(username);  // 验证用户名格式
-    if(!result){  // 如果用户名不符合格式
-        qDebug() << "[UserManager::LoginUser]用户名不符合格式";  // Debug输出
+    if(!result){
         emit LoginFailed("用户名不符合格式");  // 手动触发自定义登录失败信号
         return false;
     }
     result = ValidatePassword(password);  // 验证密码长度
-    if(!result){  // 如果密码长度不符合要求
-        qDebug() << "[UserManager::LoginUser]密码长度至少为6位";  // Debug输出
-        emit LoginFailed("密码长度至少为6位");  // 手动触发自定义登录失败信号
+    if(!result){
+        emit LoginFailed("密码长度至少为6位");
         return false;
     }
     QString encryptedPassword = EncryptPassword(password);  // 加密密码
@@ -95,13 +89,11 @@ bool UserManager::LoginUser(const QString& username, const QString& password){
     QByteArray requestData = doc.toJson(QJsonDocument::Compact);  // 将JSON文档转换为字节数组
     currentUsername = username;  // 设置当前登录用户名
     bool sendResult = networkManager->SendData(requestData);  // 发送请求数据
-    if(!sendResult){  // 如果发送失败
-        qDebug() << "[UserManager::LoginUser]发送请求失败";  // Debug输出
-        emit LoginFailed("发送请求失败");  // 手动触发自定义登录失败信号
+    if(!sendResult){
+        emit LoginFailed("登录失败");
         return false;
     }
-    qDebug() << "[UserManager::LoginUser]发送请求成功";  // Debug输出
-    // emit LoginSuccess();  // 手动触发自定义登录成功信号
+    emit LoginSuccess();  // 手动触发自定义登录成功信号
     return true;
 }
 
@@ -114,23 +106,19 @@ bool UserManager::LoginUser(const QString& username, const QString& password){
  */
 bool UserManager::UpdateUserInfo(const QString& newUsername, const QString& newPassword, const QString& verifyPassword){
     if(verifyPassword.isEmpty()){  // 如果当前密码验证为空
-        qDebug() << "[UserManager::UpdateUserInfo]密码不能为空";  // Debug输出
         emit UpdateFailed("密码不能为空");  // 手动触发自定义更新失败信号
         return false;
     }
     if(newUsername.isEmpty() && newPassword.isEmpty()){  // 如果新用户名和新密码都为空
-        qDebug() << "[UserManager::UpdateUserInfo]未修改任何信息";  // Debug输出
-        emit UpdateFailed("未修改任何信息");  // 手动触发自定义更新失败信号
+        emit UpdateFailed("未修改任何信息");
         return false;
     }
     if(!newUsername.isEmpty() && !ValidateUsername(newUsername)){  // 如果新用户名不为空且不符合格式
-        qDebug() << "[UserManager::UpdateUserInfo]用户名不符合格式";  // Debug输出
-        emit UpdateFailed("用户名不符合格式");  // 手动触发自定义更新失败信号
+        emit UpdateFailed("用户名不符合格式");
         return false;
     }
     if(!newPassword.isEmpty() && !ValidatePassword(newPassword)){  // 如果新密码不为空且不符合格式
-        qDebug() << "[UserManager::UpdateUserInfo]密码长度至少为6位";  // Debug输出
-        emit UpdateFailed("密码长度至少为6位");  // 手动触发自定义更新失败信号
+        emit UpdateFailed("密码长度至少为6位");
         return false;
     }
     QJsonObject dataObj;  // 更新用户数据对象
@@ -147,13 +135,11 @@ bool UserManager::UpdateUserInfo(const QString& newUsername, const QString& newP
     QJsonDocument doc(requestObj);  // 将请求对象转换为JSON文档
     QByteArray requestData = doc.toJson(QJsonDocument::Compact);  // 将JSON文档转换为字节数组
     bool sendResult = networkManager->SendData(requestData);  // 发送请求数据
-    if(!sendResult){  // 如果发送失败
-        qDebug() << "[UserManager::UpdateUserInfo]发送请求失败";  // Debug输出
-        emit UpdateFailed("发送请求失败");  // 手动触发自定义更新失败信号
+    if(!sendResult){
+        emit UpdateFailed("更新失败");
         return false;
     }
-    qDebug() << "[UserManager::UpdateUserInfo]发送请求成功";  // Debug输出
-    // emit UpdateSuccess();  // 手动触发自定义更新成功信号
+    emit UpdateSuccess();  // 手动触发自定义更新成功信号
     return true;
 }
 

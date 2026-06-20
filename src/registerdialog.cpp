@@ -172,29 +172,28 @@ void RegisterDialog::keyPressEvent(QKeyEvent* event){
  */
 void RegisterDialog::OnRegisterClicked(){
     if(isProcessing){  // 如果正在处理注册请求
+        qDebug() << "[RegisterDialog::OnRegisterClicked]正在处理注册请求, 请稍后";
         ShowBusyMessage();  // 信息弹窗
         return;
     }
-
     QString username = ui->usernameLineEdit->text().trimmed();  // 获取用户名文本框内容并去掉首尾空格
     QString password = ui->passwordLineEdit->text();  // 获取密码文本框内容
     QString confirmPassword = ui->confirmPasswordLineEdit->text();  // 获取确认密码文本框内容
-
     if(username.isEmpty() || password.isEmpty() || confirmPassword.isEmpty()){  // 如果用户名或密码或确认密码为空
+        qDebug() << "[RegisterDialog::OnRegisterClicked]用户名或密码或确认密码为空";
         QMessageBox::warning(this, "错误", "用户名或密码不能为空");  // 错误弹窗
         return;
     }
-
     if(password != confirmPassword){  // 如果密码和确认密码不一致
+        qDebug() << "[RegisterDialog::OnRegisterClicked]两次输入的密码不一致";
         QMessageBox::warning(this, "错误", "两次输入的密码不一致");  // 错误弹窗
         return;
     }
-
     isProcessing = true;  // 设置注册请求状态
     ui->registerButton->setEnabled(false);  // 禁用注册按钮
     ui->backButton->setEnabled(false);  // 禁用返回按钮
     timeoutTimer->start(5000);  // 启动5秒时间定时器
-    qDebug() << "[RegisterDialog::OnRegisterClicked]注册按钮被点击后自动调用槽函数";  // Debug输出
+    qDebug() << "[RegisterDialog::OnRegisterClicked]客户端发送注册请求到服务器";
     userManager->RegisterUser(username, password);  // 注册
 }
 
@@ -203,10 +202,11 @@ void RegisterDialog::OnRegisterClicked(){
  */
 void RegisterDialog::OnBackClicked(){
     if(isProcessing){  // 如果正在处理注册请求
+        qDebug() << "[RegisterDialog::OnBackClicked]正在处理注册请求, 请稍后";
         ShowBusyMessage();  // 信息弹窗
         return;
     }
-    qDebug() << "[RegisterDialog::OnBackClicked]返回按钮被点击后自动调用槽函数";  // Debug输出 
+    qDebug() << "[RegisterDialog::OnBackClicked]返回登录页面";
     done(1);  // 关闭注册对话框并返回登录页面
 }
 
@@ -232,7 +232,7 @@ void RegisterDialog::OnRegisterSuccess(){
     ui->backButton->setEnabled(true);  // 启用返回按钮
     registeredUsername = ui->usernameLineEdit->text().trimmed();  // 获取注册成功的用户名
     QMessageBox::information(this, "成功", "注册成功");  // 成功弹窗
-    qDebug() << "[RegisterDialog::OnRegisterSuccess]注册成功后自动调用槽函数";  // Debug输出
+    qDebug() << "[RegisterDialog::OnRegisterSuccess]客户端接收注册成功响应,注册成功";
     done(0);  // 关闭注册对话框并返回登录页面
 }
 
@@ -245,7 +245,6 @@ void RegisterDialog::OnRegisterFailed(const QString& errorMsg){
     isProcessing = false;  // 设置注册请求状态
     ui->registerButton->setEnabled(true);  // 启用注册按钮
     ui->backButton->setEnabled(true);  // 启用返回按钮
-
     if(errorMsg == "用户名已存在"){
         QMessageBox::warning(this, "错误", "用户名已存在");
     }
@@ -258,5 +257,5 @@ void RegisterDialog::OnRegisterFailed(const QString& errorMsg){
     else{
         QMessageBox::warning(this, "错误", errorMsg);
     }
-    qDebug() << "[RegisterDialog::OnRegisterFailed]注册失败后自动调用槽函数" << errorMsg;  // Debug输出
+    qDebug() << "[RegisterDialog::OnRegisterFailed]客户端接收注册失败响应, 错误信息: " << errorMsg;
 }

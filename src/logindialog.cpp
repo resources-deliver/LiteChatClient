@@ -153,23 +153,22 @@ void LoginDialog::keyPressEvent(QKeyEvent* event){
  */
 void LoginDialog::OnLoginClicked(){
     if(isProcessing){  // 如果正在处理登录请求
+        qDebug() << "[LoginDialog::OnLoginClicked]正在处理登录请求, 请稍后";
         ShowBusyMessage();  // 信息弹窗
         return;
     }
-
     QString username = ui->usernameLineEdit->text().trimmed();  // 获取用户名文本框的内容并去掉首尾空格
     QString password = ui->passwordLineEdit->text();  // 获取密码文本框的内容
-
     if(username.isEmpty() || password.isEmpty()){  // 如果用户名或密码为空
+        qDebug() << "[LoginDialog::OnLoginClicked]用户名或密码不能为空";
         QMessageBox::warning(this, "错误", "用户名或密码不能为空");  // 错误弹窗
         return;
     }
-
     isProcessing = true;  // 设置登录请求状态
     ui->loginButton->setEnabled(false);  // 禁用登录按钮
     ui->registerButton->setEnabled(false);  // 禁用注册按钮
     timeoutTimer->start(5000);  // 启动5秒时间定时器
-    qDebug() << "[LoginDialog::OnLoginClicked]登录按钮被点击后自动调用槽函数";  // Debug输出
+    qDebug() << "[LoginDialog::OnLoginClicked]客户端发送登录请求到服务器";
     userManager->LoginUser(username, password);  // 登录
 }
 
@@ -178,10 +177,11 @@ void LoginDialog::OnLoginClicked(){
  */
 void LoginDialog::OnRegisterClicked(){
     if(isProcessing){  // 如果正在处理登录请求
+        qDebug() << "[LoginDialog::OnRegisterClicked]正在处理登录请求, 请稍后";
         ShowBusyMessage();  // 信息弹窗
         return;
     }
-    qDebug() << "[LoginDialog::OnRegisterClicked]注册按钮被点击后自动调用槽函数";  // Debug输出
+    qDebug() << "[LoginDialog::OnRegisterClicked]进入注册页面";
     done(2);  // 关闭登录对话框并返回注册页面
 }
 
@@ -203,8 +203,8 @@ void LoginDialog::OnLoginTimeout(){
 void LoginDialog::OnLoginSuccess(){
     timeoutTimer->stop();  // 停止时间定时器
     isProcessing = false;  // 设置登录请求状态
+    qDebug() << "[LoginDialog::OnLoginSuccess]客户端接收登录成功响应,登录成功";
     accept();  // 接受登录成功信号
-    qDebug() << "[LoginDialog::OnLoginSuccess]登录成功后自动调用槽函数";  // Debug输出
 }
 
 /**
@@ -216,7 +216,6 @@ void LoginDialog::OnLoginFailed(const QString& errorMsg){
     isProcessing = false;  // 设置登录请求状态
     ui->loginButton->setEnabled(true);  // 启用登录按钮
     ui->registerButton->setEnabled(true);  // 启用注册按钮
-
     if(errorMsg == "该用户不存在"){
         QMessageBox::warning(this, "错误", "该用户不存在");
     }
@@ -235,5 +234,5 @@ void LoginDialog::OnLoginFailed(const QString& errorMsg){
     else{
         QMessageBox::warning(this, "错误", errorMsg);
     }
-    qDebug() << "[LoginDialog::OnLoginFailed]登录失败后自动调用槽函数" << errorMsg;  // Debug输出
+    qDebug() << "[LoginDialog::OnLoginFailed]客户端接收登录失败响应, 错误信息: " << errorMsg;
 }

@@ -39,11 +39,10 @@ bool FriendManager::AddFriend(const QString& username){
     QByteArray requestData = doc.toJson(QJsonDocument::Compact);
     bool sendResult = networkManager->SendData(requestData);
     if(!sendResult){
-        qDebug() << "[FriendManager::AddFriend]发送请求失败";
-        emit FriendAddFailed("发送请求失败");
+        emit FriendAddFailed("添加失败");
         return false;
     }
-    qDebug() << "[FriendManager::AddFriend]发送请求成功";
+    emit FriendAdded(username);
     return true;
 }
 

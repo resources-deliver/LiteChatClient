@@ -23,12 +23,17 @@ SearchResultDialog::SearchResultDialog(FriendManager* friendManager, QWidget *pa
     , isProcessing(false)
     , timeoutTimer(new QTimer(this))
 {
-    SetupUI();
+    SetupUI();  // 设置搜索结果对话框（UI界面）样式
 
+    // 添加好友按钮被点击后，自动触发自带的信号，自动调用槽函数
     connect(addFriendButton, &QPushButton::clicked, this, &SearchResultDialog::OnAddFriendClicked);
+    // 关闭按钮被点击后，自动触发自带的信号，自动调用槽函数
     connect(closeButton, &QPushButton::clicked, this, &SearchResultDialog::OnCloseClicked);
+    // 时间定时器超时后，自动触发自带的信号，自动调用槽函数
     connect(timeoutTimer, &QTimer::timeout, this, &SearchResultDialog::OnAddFriendTimeout);
+    // 添加好友成功后，手动触发自定义信号，自动调用槽函数
     connect(friendManager, &FriendManager::FriendAdded, this, &SearchResultDialog::OnFriendAdded);
+    // 添加好友失败后，手动触发自定义信号，自动调用槽函数
     connect(friendManager, &FriendManager::FriendAddFailed, this, &SearchResultDialog::OnFriendAddFailed);
 }
 
@@ -149,27 +154,29 @@ void SearchResultDialog::ShowBusyMessage(){
  * @brief 添加好友按钮被点击后，自动触发自带的信号，自动调用槽函数
  */
 void SearchResultDialog::OnAddFriendClicked(){
-    if(isProcessing){
-        ShowBusyMessage();
+    if(isProcessing){  // 如果正在处理添加好友请求
+        qDebug() << "[SearchResultDialog::OnAddFriendClicked]正在处理添加好友请求, 请稍后";
+        ShowBusyMessage();  // 信息弹窗
         return;
     }
-    isProcessing = true;
-    addFriendButton->setEnabled(false);
-    closeButton->setEnabled(false);
-    timeoutTimer->start(5000);
-    qDebug() << "[SearchResultDialog::OnAddFriendClicked]添加好友按钮被点击后自动调用槽函数";
-    friendManager->AddFriend(queriedUsername);
+    isProcessing = true;  // 设置添加好友请求状态
+    addFriendButton->setEnabled(false);  // 禁用添加好友按钮
+    closeButton->setEnabled(false);  // 禁用关闭按钮
+    timeoutTimer->start(5000);  // 启动5秒时间定时器
+    qDebug() << "[SearchResultDialog::OnAddFriendClicked]客户端发送添加好友请求到服务器";
+    friendManager->AddFriend(queriedUsername);  // 添加好友
 }
 
 /**
  * @brief 关闭按钮被点击后，自动触发自带的信号，自动调用槽函数
  */
 void SearchResultDialog::OnCloseClicked(){
-    if(isProcessing){
-        ShowBusyMessage();
+    if(isProcessing){  // 如果正在处理添加好友请求
+        qDebug() << "[SearchResultDialog::OnCloseClicked]正在处理添加好友请求, 请稍后";
+        ShowBusyMessage();  // 信息弹窗
         return;
     }
-    qDebug() << "[SearchResultDialog::OnCloseClicked]关闭按钮被点击后自动调用槽函数";
+    qDebug() << "[SearchResultDialog::OnCloseClicked]用户点击了关闭按钮";
     reject();
 }
 
@@ -177,11 +184,11 @@ void SearchResultDialog::OnCloseClicked(){
  * @brief 时间定时器超时后，自动触发自带的信号，自动调用槽函数
  */
 void SearchResultDialog::OnAddFriendTimeout(){
-    timeoutTimer->stop();
-    isProcessing = false;
-    addFriendButton->setEnabled(true);
-    closeButton->setEnabled(true);
-    QMessageBox::warning(this, "错误", "请求超时");
+    timeoutTimer->stop();  // 停止时间定时器
+    isProcessing = false;  // 设置添加好友请求状态
+    addFriendButton->setEnabled(true);  // 启用添加好友按钮
+    closeButton->setEnabled(true);  // 启用关闭按钮
+    QMessageBox::warning(this, "错误", "请求超时");  // 错误弹窗
     qDebug() << "[SearchResultDialog::OnAddFriendTimeout]时间定时器超时后自动调用槽函数";
 }
 
@@ -190,11 +197,13 @@ void SearchResultDialog::OnAddFriendTimeout(){
  * @param username 添加成功的用户名
  */
 void SearchResultDialog::OnFriendAdded(const QString& username){
-    timeoutTimer->stop();
-    isProcessing = false;
-    QMessageBox::information(this, "成功", "添加好友成功");
-    qDebug() << "[SearchResultDialog::OnFriendAdded]添加好友成功后自动调用槽函数";
-    accept();
+    timeoutTimer->stop();  // 停止时间定时器
+    isProcessing = false;  // 设置添加好友请求状态
+    addFriendButton->setEnabled(true);  // 启用添加好友按钮
+    closeButton->setEnabled(true);  // 启用关闭按钮
+    QMessageBox::information(this, "成功", "添加好友成功");  // 成功弹窗
+    qDebug() << "[SearchResultDialog::OnFriendAdded]客户端接收添加好友成功响应,添加成功";
+    accept();  // 接受添加成功信号
 }
 
 /**
@@ -202,11 +211,10 @@ void SearchResultDialog::OnFriendAdded(const QString& username){
  * @param errorMsg 错误信息
  */
 void SearchResultDialog::OnFriendAddFailed(const QString& errorMsg){
-    timeoutTimer->stop();
-    isProcessing = false;
-    addFriendButton->setEnabled(true);
-    closeButton->setEnabled(true);
-
+    timeoutTimer->stop();  // 停止时间定时器
+    isProcessing = false;  // 设置添加好友请求状态
+    addFriendButton->setEnabled(true);  // 启用添加好友按钮
+    closeButton->setEnabled(true);  // 启用关闭按钮
     if(errorMsg == "该用户不存在"){
         QMessageBox::warning(this, "错误", "该用户不存在");
     }
@@ -225,5 +233,5 @@ void SearchResultDialog::OnFriendAddFailed(const QString& errorMsg){
     else{
         QMessageBox::warning(this, "错误", errorMsg);
     }
-    qDebug() << "[SearchResultDialog::OnFriendAddFailed]添加好友失败后自动调用槽函数" << errorMsg;
+    qDebug() << "[SearchResultDialog::OnFriendAddFailed]客户端接收添加好友失败响应, 错误信息:" << errorMsg;
 }

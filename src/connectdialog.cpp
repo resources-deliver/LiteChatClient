@@ -159,7 +159,7 @@ void ConnectDialog::OnConnectClicked(){
         QMessageBox::warning(this, "错误", "请输入服务器IP地址");  // 错误弹窗
         return;
     }
-    qDebug() << "[ConnectDialog::OnConnectClicked]连接按钮被点击后自动调用槽函数";  // Debug输出
+    qDebug() << "[ConnectDialog::OnConnectClicked]客户端发送连接请求到服务器";
     PerformConnection(ip);  // 执行连接请求操作
 }
 
@@ -167,7 +167,7 @@ void ConnectDialog::OnConnectClicked(){
  * @brief 跳过按钮被点击后，自动触发自带的信号，自动调用槽函数
  */
 void ConnectDialog::OnSkipClicked(){
-    qDebug() << "[ConnectDialog::OnSkipClicked]跳过按钮被点击后自动调用槽函数";  // Debug输出
+    qDebug() << "[ConnectDialog::OnSkipClicked]客户端发送连接请求到服务器";
     PerformConnection(DEFAULT_IP);  // 执行连接请求操作
 }
 
@@ -189,7 +189,7 @@ void ConnectDialog::OnConnectionTimeout(){
 void ConnectDialog::OnConnected(){
     timeoutTimer->stop();  // 停止时间定时器
     isProcessing = false;  // 设置连接请求状态
-    qDebug() << "[ConnectDialog::OnConnected]连接成功后自动调用槽函数";  // Debug输出
+    qDebug() << "[ConnectDialog::OnConnected]客户端接收连接成功响应";
     accept();  // 接受连接成功信号
 }
 
@@ -215,5 +215,5 @@ void ConnectDialog::OnError(const QString& errorMsg){
     else{
         QMessageBox::warning(this, "错误", errorMsg);
     }
-    qDebug() << "[ConnectDialog::OnError]连接错误后自动调用槽函数, 错误信息: " << errorMsg;
+    qDebug() << "[ConnectDialog::OnError]客户端接收连接失败响应, 错误信息: " << errorMsg;
 }
