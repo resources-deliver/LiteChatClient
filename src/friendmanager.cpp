@@ -42,7 +42,7 @@ bool FriendManager::AddFriend(const QString& username){
         emit FriendAddFailed("添加失败");
         return false;
     }
-    emit FriendAdded(username);
+    qDebug() << "[FriendManager::AddFriend]发送请求成功";
     return true;
 }
 

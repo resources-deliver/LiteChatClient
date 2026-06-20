@@ -51,7 +51,7 @@ private:
     void SetupTopBar(QVBoxLayout* mainLayout);
     void SetupLeftPanel(QHBoxLayout* centralLayout);
     void SetupContentArea(QHBoxLayout* centralLayout);
-    void SetupBottomBar(QVBoxLayout* leftLayout);
+    void SetupBottomBar(QVBoxLayout* mainLayout);
     void ClearFriendList();
     void UpdateFriendListStatus(const QString& username, UserStatus status);
     bool eventFilter(QObject* obj, QEvent* event) override;
@@ -69,5 +69,7 @@ private:
     QPushButton* deleteFriendButton;  // 删除好友按钮的指针
     QPushButton* refreshListButton;  // 刷新列表按钮的指针
     QLabel* welcomeLabel;  // 欢迎标签的指针
+    bool isDeletingFriend;  // 删除好友处理状态
+    bool isViewingFriendInfo;  // 查看好友资料标志
 };
 #endif // MAINWINDOW_H

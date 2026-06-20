@@ -20,6 +20,7 @@ public:
     explicit SearchResultDialog(FriendManager* friendManager, QWidget *parent = nullptr);
     ~SearchResultDialog() override;
     void SetResultInfo(const QString& username, UserStatus status);
+    void SetViewOnlyMode(bool viewOnly);
 
 private slots:
     void OnAddFriendClicked();

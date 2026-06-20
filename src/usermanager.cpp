@@ -57,7 +57,7 @@ bool UserManager::RegisterUser(const QString& username, const QString& password)
         emit RegisterFailed("注册失败");
         return false;
     }
-    emit RegisterSuccess();  // 手动触发自定义注册成功信号
+    qDebug() << "[UserManager::RegisterUser]注册请求发送成功";  // Debug输出
     return true;
 }
 
@@ -93,7 +93,7 @@ bool UserManager::LoginUser(const QString& username, const QString& password){
         emit LoginFailed("登录失败");
         return false;
     }
-    emit LoginSuccess();  // 手动触发自定义登录成功信号
+    qDebug() << "[UserManager::LoginUser]登录请求发送成功";  // Debug输出
     return true;
 }
 
@@ -139,7 +139,7 @@ bool UserManager::UpdateUserInfo(const QString& newUsername, const QString& newP
         emit UpdateFailed("更新失败");
         return false;
     }
-    emit UpdateSuccess();  // 手动触发自定义更新成功信号
+    qDebug() << "[UserManager::UpdateUserInfo]更新请求发送成功";  // Debug输出
     return true;
 }
 

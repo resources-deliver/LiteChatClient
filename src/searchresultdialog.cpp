@@ -61,6 +61,17 @@ void SearchResultDialog::SetResultInfo(const QString& username, UserStatus statu
 }
 
 /**
+ * @brief 设置是否为仅查看模式（隐藏添加好友按钮）
+ * @param viewOnly 是否仅查看
+ */
+void SearchResultDialog::SetViewOnlyMode(bool viewOnly){
+    if(viewOnly){
+        addFriendButton->hide();
+        setWindowTitle("好友资料");
+    }
+}
+
+/**
  * @brief 设置搜索结果对话框（UI界面）样式
  */
 void SearchResultDialog::SetupUI(){

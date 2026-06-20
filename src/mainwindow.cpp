@@ -12,6 +12,7 @@
 #include <QHBoxLayout>
 #include <QMouseEvent>
 #include <QMessageBox>
+#include <QRegularExpression>
 #include <QDebug>
 
 /**
@@ -35,6 +36,8 @@ MainWindow::MainWindow(NetworkManager* networkManager, UserManager* userManager,
     , deleteFriendButton(nullptr)
     , refreshListButton(nullptr)
     , welcomeLabel(nullptr)
+    , isDeletingFriend(false)
+    , isViewingFriendInfo(false)
 {
     ui->setupUi(this);  // 初始化主窗口（UI界面）
 
@@ -57,6 +60,8 @@ MainWindow::MainWindow(NetworkManager* networkManager, UserManager* userManager,
     SetupContentArea(centralLayout);  // 设置内容区域
 
     mainLayout->addLayout(centralLayout);  // 添加中央区域布局
+
+    SetupBottomBar(mainLayout);  // 设置底部操作栏
 
     setCentralWidget(centralWidget);  // 设置中央窗口部件
 
@@ -136,6 +141,7 @@ void MainWindow::SetupTopBar(QVBoxLayout* mainLayout){
     searchLineEdit = new QLineEdit();  // 创建搜索框
     searchLineEdit->setPlaceholderText("搜索好友");  // 设置搜索框占位符文本
     searchLineEdit->setFixedSize(200, 32);  // 设置搜索框固定大小200×32px
+    QAction* searchAction = searchLineEdit->addAction(QIcon(":/icons/search.png"), QLineEdit::LeadingPosition);  // 添加放大镜图标
     searchLineEdit->setStyleSheet(
         "QLineEdit {"
         "   border: 1px solid #D9D9D9;"
@@ -199,16 +205,14 @@ void MainWindow::SetupLeftPanel(QHBoxLayout* centralLayout){
 
     leftLayout->addWidget(friendListWidget);  // 添加好友列表控件
 
-    SetupBottomBar(leftLayout);  // 设置底部操作栏
-
     centralLayout->addWidget(leftPanel);  // 添加左侧面板
 }
 
 /**
  * @brief 设置底部操作栏
- * @param leftLayout 左侧面板布局指针
+ * @param mainLayout 主布局指针
  */
-void MainWindow::SetupBottomBar(QVBoxLayout* leftLayout){
+void MainWindow::SetupBottomBar(QVBoxLayout* mainLayout){
     QWidget* bottomBar = new QWidget();  // 创建底部操作栏
     bottomBar->setFixedHeight(40);  // 设置底部操作栏固定高度40px
     bottomBar->setStyleSheet("background-color: #FFFFFF; border-top: 1px solid #E8E8E8;");  // 设置底部操作栏样式
@@ -256,7 +260,7 @@ void MainWindow::SetupBottomBar(QVBoxLayout* leftLayout){
     bottomLayout->addWidget(deleteFriendButton);  // 添加删除好友按钮
     bottomLayout->addWidget(refreshListButton);  // 添加刷新列表按钮
 
-    leftLayout->addWidget(bottomBar);  // 添加底部操作栏
+    mainLayout->addWidget(bottomBar);  // 添加底部操作栏
 }
 
 /**
@@ -369,10 +373,16 @@ void MainWindow::OnStatusChanged(UserStatus status){
 void MainWindow::OnSearchReturnPressed(){
     QString searchText = searchLineEdit->text().trimmed();  // 获取搜索框文本并去掉首尾空格
     if(searchText.isEmpty()){
-        QMessageBox::warning(this, "错误", "请输入要搜索的用户名");
+        QMessageBox::warning(this, "错误", "用户名不能为空");
+        return;
+    }
+    QRegularExpression regex("^[a-zA-Z0-9_]{3,20}$");  // 用户名格式校验正则表达式
+    if(!regex.match(searchText).hasMatch()){
+        QMessageBox::warning(this, "错误", "用户名不符合格式");
         return;
     }
     friendManager->QueryFriendInfo(searchText);  // 发送查询好友请求
+    isViewingFriendInfo = false;  // 设置搜索模式
     qDebug() << "[MainWindow::OnSearchReturnPressed]搜索框回车键被按下后自动调用槽函数";  // Debug输出
 }
 
@@ -382,6 +392,17 @@ void MainWindow::OnSearchReturnPressed(){
  */
 void MainWindow::OnFriendListReceived(const QList<FriendInfo>& friendList){
     ClearFriendList();  // 清空好友列表
+    if(friendList.isEmpty()){
+        QListWidgetItem* emptyItem = new QListWidgetItem();  // 创建空列表提示项
+        emptyItem->setSizeHint(QSize(0, 60));  // 设置列表项大小
+        emptyItem->setFlags(emptyItem->flags() & ~Qt::ItemIsSelectable);  // 禁用选中
+        QLabel* emptyLabel = new QLabel("暂无好友，快去添加好友吧");  // 创建空列表提示标签
+        emptyLabel->setAlignment(Qt::AlignCenter);  // 设置标签居中
+        emptyLabel->setStyleSheet("font-size: 12px; color: #BFBFBF; border: none;");  // 设置标签样式
+        friendListWidget->addItem(emptyItem);  // 添加空列表提示项
+        friendListWidget->setItemWidget(emptyItem, emptyLabel);  // 设置列表项控件
+        return;
+    }
     for(const FriendInfo& info : friendList){
         QWidget* itemWidget = new QWidget();  // 创建好友项控件
         QHBoxLayout* itemLayout = new QHBoxLayout(itemWidget);  // 创建好友项水平布局
@@ -406,7 +427,7 @@ void MainWindow::OnFriendListReceived(const QList<FriendInfo>& friendList){
         itemLayout->addStretch();  // 添加弹性空间
 
         QListWidgetItem* item = new QListWidgetItem();  // 创建列表项
-        item->setSizeHint(QSize(0, 40));  // 设置列表项大小
+        item->setSizeHint(QSize(0, 60));  // 设置列表项大小
         item->setData(Qt::UserRole, info.username);  // 设置列表项数据（用户名）
         friendListWidget->addItem(item);  // 添加列表项
         friendListWidget->setItemWidget(item, itemWidget);  // 设置列表项控件
@@ -437,6 +458,8 @@ void MainWindow::OnFriendAdded(const QString& username){
  * @param username 删除成功的用户名
  */
 void MainWindow::OnFriendDeleted(const QString& username){
+    isDeletingFriend = false;
+    QMessageBox::information(this, "成功", "删除好友成功");
     friendManager->GetFriendList();  // 刷新好友列表
     qDebug() << "[MainWindow::OnFriendDeleted]删除好友后自动调用槽函数" << username;  // Debug输出
 }
@@ -446,6 +469,7 @@ void MainWindow::OnFriendDeleted(const QString& username){
  * @param errorMsg 错误信息
  */
 void MainWindow::OnFriendDeleteFailed(const QString& errorMsg){
+    isDeletingFriend = false;
     QMessageBox::warning(this, "错误", "删除好友失败：" + errorMsg);
     qDebug() << "[MainWindow::OnFriendDeleteFailed]删除好友失败后自动调用槽函数" << errorMsg;  // Debug输出
 }
@@ -467,6 +491,10 @@ void MainWindow::OnFriendStatusChanged(const QString& username, UserStatus statu
 void MainWindow::OnQueryFriendResult(const FriendInfo& info){
     SearchResultDialog searchResultDlg(friendManager, this);  // 创建搜索结果对话框
     searchResultDlg.SetResultInfo(info.username, info.status);  // 设置搜索结果信息
+    if(isViewingFriendInfo){
+        searchResultDlg.SetViewOnlyMode(true);  // 设置仅查看模式
+        isViewingFriendInfo = false;  // 重置标志
+    }
     searchResultDlg.exec();  // 显示搜索结果对话框
     qDebug() << "[MainWindow::OnQueryFriendResult]查询好友结果后自动调用槽函数";  // Debug输出
 }
@@ -484,6 +512,10 @@ void MainWindow::OnQueryFriendFailed(const QString& errorMsg){
  * @brief 删除好友按钮被点击后，自动触发自带的信号，自动调用槽函数
  */
 void MainWindow::OnDeleteFriendClicked(){
+    if(isDeletingFriend){
+        QMessageBox::information(this, "提示", "在加班了，别急", QMessageBox::Ok);
+        return;
+    }
     QListWidgetItem* currentItem = friendListWidget->currentItem();  // 获取当前选中项
     if(!currentItem){
         QMessageBox::warning(this, "错误", "请先选择要删除的好友");
@@ -491,10 +523,11 @@ void MainWindow::OnDeleteFriendClicked(){
     }
     QString username = currentItem->data(Qt::UserRole).toString();  // 获取用户名
     QMessageBox::StandardButton reply = QMessageBox::question(
-        this, "确认删除", "确定要删除好友 \"" + username + "\" 吗？",
+        this, "确认删除好友", "确定要删除好友 \"" + username + "\" 吗？\n删除后，双方的历史聊天记录将清空。",
         QMessageBox::Yes | QMessageBox::No, QMessageBox::No
     );  // 确认删除好友弹窗
     if(reply == QMessageBox::Yes){
+        isDeletingFriend = true;
         friendManager->DeleteFriend(username);  // 发送删除好友请求
     }
     qDebug() << "[MainWindow::OnDeleteFriendClicked]删除好友按钮被点击后自动调用槽函数";  // Debug输出
@@ -505,6 +538,7 @@ void MainWindow::OnDeleteFriendClicked(){
  */
 void MainWindow::OnRefreshListClicked(){
     friendManager->GetFriendList();  // 发送获取好友列表请求
+    ui->statusbar->showMessage("好友列表已刷新", 1500);  // 状态栏显示刷新提示，1.5秒自动消失
     qDebug() << "[MainWindow::OnRefreshListClicked]刷新列表按钮被点击后自动调用槽函数";  // Debug输出
 }
 
@@ -516,13 +550,18 @@ void MainWindow::OnFriendListContextMenu(const QPoint& pos){
     QListWidgetItem* item = friendListWidget->itemAt(pos);  // 获取右键点击位置对应的列表项
     if(!item) return;
     QMenu contextMenu(this);  // 创建右键菜单
+    QAction* infoAction = contextMenu.addAction("查看资料");  // 添加查看资料菜单项
     QAction* deleteAction = contextMenu.addAction("删除好友");  // 添加删除好友菜单项
-    deleteAction->setIcon(QIcon());  // 设置菜单项图标
     QAction* selectedAction = contextMenu.exec(friendListWidget->mapToGlobal(pos));  // 显示右键菜单
-    if(selectedAction == deleteAction){
+    if(selectedAction == infoAction){
+        QString username = item->data(Qt::UserRole).toString();  // 获取用户名
+        isViewingFriendInfo = true;  // 设置查看资料模式
+        friendManager->QueryFriendInfo(username);  // 发送查询好友请求
+    }
+    else if(selectedAction == deleteAction){
         QString username = item->data(Qt::UserRole).toString();  // 获取用户名
         QMessageBox::StandardButton reply = QMessageBox::question(
-            this, "确认删除", "确定要删除好友 \"" + username + "\" 吗？",
+            this, "确认删除好友", "确定要删除好友 \"" + username + "\" 吗？\n删除后，双方的历史聊天记录将清空。",
             QMessageBox::Yes | QMessageBox::No, QMessageBox::No
         );  // 确认删除好友弹窗
         if(reply == QMessageBox::Yes){
