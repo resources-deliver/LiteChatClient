@@ -40,7 +40,6 @@ NetworkManager::~NetworkManager(){
  */
 bool NetworkManager::ConnectToServer(const QString& ip, int port){
     if(isConnected){  // 如果已连接
-        qDebug() << "[NetworkManager::ConnectToServer]已连接到服务器";  // Debug输出
         emit ErrorOccurred("已连接到服务器");  // 手动触发自定义错误信号
         return false;
     }
@@ -49,7 +48,6 @@ bool NetworkManager::ConnectToServer(const QString& ip, int port){
     socket->connectToHost(QHostAddress(ip), port);  // 连接到服务器
     bool result = socket->waitForConnected(timeout * 1000);  // 等待连接成功
     if(!result){  // 如果连接超时
-        qDebug() << "[NetworkManager::ConnectToServer]连接超时";
         emit ErrorOccurred("连接超时");  // 手动触发自定义错误信号
         return false;
     }
@@ -86,24 +84,21 @@ bool NetworkManager::IsConnected() const{
  */
 bool NetworkManager::SendData(const QByteArray& data){
     if(!isConnected){  // 如果未连接
-        qDebug() << "[NetworkManager::SendData]未连接到服务器，无法发送数据";  // Debug输出
-        emit ErrorOccurred("未连接到服务器");  // 手动触发自定义错误信号
+        emit ErrorOccurred("未连接到服务器,无法发送数据");  // 手动触发自定义错误信号
         return false;
     }
     QByteArray package = PackageMessage(data);  // 封装消息
     qint64 bytesWritten = socket->write(package);  // 发送数据
-    if(bytesWritten == -1){  // 如果发送失败
-        qDebug() << "[NetworkManager::SendData]发送数据失败";  // Debug输出
-        emit ErrorOccurred("发送数据失败");  // 手动触发自定义错误信号
+    if(bytesWritten == -1){
+        emit ErrorOccurred("发送数据失败");
         return false;
     }
     bool result = socket->waitForBytesWritten(timeout * 1000);  // 等待数据发送完成
     if(!result){  // 如果发送超时
-        qDebug() << "[NetworkManager::SendData]发送超时";  // Debug输出
-        emit ErrorOccurred("发送超时");  // 手动触发自定义错误信号
+        emit ErrorOccurred("发送超时");
         return false;
     }
-    qDebug() << "[NetworkManager::SendData]发送成功";  // Debug输出
+    qDebug() << "[NetworkManager::SendData]发送成功";
     return true;
 }
 
@@ -120,7 +115,6 @@ void NetworkManager::SetTimeout(int seconds){
  */
 void NetworkManager::OnConnected(){
     isConnected = true;  // 设置连接状态
-    qDebug() << "[NetworkManager::OnConnected]连接成功";  // Debug输出
     emit Connected();  // 手动触发自定义连接成功信号
 }
 
@@ -130,7 +124,7 @@ void NetworkManager::OnConnected(){
 void NetworkManager::OnDisconnected(){
     isConnected = false;  // 设置连接状态
     receiveBuffer.clear();  // 清空接收缓冲区
-    qDebug() << "[NetworkManager::OnDisconnected]连接断开";  // Debug输出
+    emit Disconnected();  // 手动触发自定义断开连接信号
 }
 
 /**
@@ -142,7 +136,6 @@ void NetworkManager::OnReadyRead(){
         QByteArray header = receiveBuffer.left(4);  // 提取消息头
         quint32 bodyLength = ParseMessageHeader(header);
         if(bodyLength == 0 || bodyLength > 65536){  // 若消息体长度不合法
-            qDebug() << "[NetworkManager::OnReadyRead]协议错误：消息体长度不合法";  // Debug输出
             emit ErrorOccurred("协议错误：消息体长度不合法");  // 手动触发自定义错误信号
             DisconnectFromServer();  // 断开与服务端连接
             return;
@@ -184,7 +177,6 @@ void NetworkManager::OnError(QAbstractSocket::SocketError socketError){
             errorMsg = socket->errorString();
             break;
     }
-    qDebug() << "[NetworkManager::OnError]连接错误后自动调用槽函数, 错误信息: " << errorMsg;
     emit ErrorOccurred(errorMsg);  // 手动触发自定义错误信号
 }
 

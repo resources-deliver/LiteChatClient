@@ -154,14 +154,13 @@ void UserInfoDialog::ShowVerifyPasswordDialog(){
         "", 
         &ok
     );  // 通过身份验证密码对话框获取用户输入的密码
-
     if(ok && !verifyPassword.isEmpty()){  // 如果用户点击了确定按钮并且密码不为空
         isProcessing = true;  // 设置更新请求状态
         ui->saveButton->setEnabled(false);  // 禁用保存修改按钮
         ui->cancelButton->setEnabled(false);  // 禁用取消按钮
         timeoutTimer->start(5000);  // 启动5秒时间定时器
-        qDebug() << "[UserInfoDialog::ShowVerifyPasswordDialog]显示身份验证密码对话框后触发槽函数";  // Debug输出
         userManager->UpdateUserInfo(pendingNewUsername, pendingNewPassword, verifyPassword);  // 更新
+        qDebug() << "[UserInfoDialog::ShowVerifyPasswordDialog]更新用户信息请求成功";
     }
 }
 
@@ -170,24 +169,24 @@ void UserInfoDialog::ShowVerifyPasswordDialog(){
  */
 void UserInfoDialog::OnSaveClicked(){
     if(isProcessing){  // 如果正在处理更新请求
+        qDebug() << "[UserInfoDialog::OnSaveClicked]正在处理更新请求, 请稍后";
         ShowBusyMessage();  // 信息弹窗
         return;
     }
-
     pendingNewUsername = ui->newUsernameLineEdit->text().trimmed();  // 获取新用户名文本框中的文本并去掉首尾空格
     pendingNewPassword = ui->newPasswordLineEdit->text();  // 获取新密码文本框中的文本
     QString confirmPassword = ui->confirmPasswordLineEdit->text();  // 获取确认新密码文本框中的文本
-
     if(pendingNewUsername.isEmpty() && pendingNewPassword.isEmpty()){  // 如果用户名和密码都为空
+        qDebug() << "[UserInfoDialog::OnSaveClicked]未修改任何信息";
         QMessageBox::warning(this, "错误", "未修改任何信息");  // 错误弹窗
         return;
     }
-
     if(!pendingNewPassword.isEmpty() && pendingNewPassword != confirmPassword){  // 如果新密码不为空且新密码和确认新密码不一致
+        qDebug() << "[UserInfoDialog::OnSaveClicked]两次输入的密码不一致";
         QMessageBox::warning(this, "错误", "两次输入的密码不一致");  // 错误弹窗
         return;
     }
-    qDebug() << "[UserInfoDialog::OnSaveClicked]保存按钮被点击后自动调用槽函数";  // Debug输出
+    qDebug() << "[UserInfoDialog::OnSaveClicked]客户端发送更新用户信息请求到服务器";
     ShowVerifyPasswordDialog();  // 显示身份验证密码对话框
 }
 
@@ -196,10 +195,11 @@ void UserInfoDialog::OnSaveClicked(){
  */
 void UserInfoDialog::OnCancelClicked(){
     if(isProcessing){  // 如果正在处理更新请求
+        qDebug() << "[UserInfoDialog::OnCancelClicked]正在处理更新请求, 请稍后";
         ShowBusyMessage();  // 信息弹窗
         return;
     }
-    qDebug() << "[UserInfoDialog::OnCancelClicked]取消按钮被点击后自动调用槽函数";  // Debug输出 
+    qDebug() << "[UserInfoDialog::OnCancelClicked]用户点击了取消按钮";
     reject();  // 关闭个人信息对话框
 }
 
@@ -224,7 +224,7 @@ void UserInfoDialog::OnUpdateSuccess(){
     ui->saveButton->setEnabled(true);  // 启用保存修改按钮
     ui->cancelButton->setEnabled(true);  // 启用取消按钮
     QMessageBox::information(this, "成功", "修改成功");  // 成功弹窗
-    qDebug() << "[UserInfoDialog::OnUpdateSuccess]更新成功后自动调用槽函数";  // Debug输出
+    qDebug() << "[UserInfoDialog::OnUpdateSuccess]客户端接收更新成功响应,更新成功";
     accept();  // 接受更新成功信号
 }
 
@@ -237,7 +237,6 @@ void UserInfoDialog::OnUpdateFailed(const QString& errorMsg){
     isProcessing = false;  // 设置更新请求状态
     ui->saveButton->setEnabled(true);  // 启用保存修改按钮
     ui->cancelButton->setEnabled(true);  // 启用取消按钮
-
     if(errorMsg == "验证密码错误"){
         QMessageBox::warning(this, "错误", "验证密码错误");
     }
@@ -253,5 +252,5 @@ void UserInfoDialog::OnUpdateFailed(const QString& errorMsg){
     else{
         QMessageBox::warning(this, "错误", errorMsg);
     }
-    qDebug() << "[UserInfoDialog::OnUpdateFailed]更新失败后自动调用槽函数" << errorMsg;  // Debug输出
+    qDebug() << "[UserInfoDialog::OnUpdateFailed]客户端接收更新失败响应, 错误信息:" << errorMsg;
 }
