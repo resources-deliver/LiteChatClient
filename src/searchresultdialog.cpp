@@ -4,6 +4,7 @@
 #include <QVBoxLayout>
 #include <QHBoxLayout>
 #include <QMessageBox>
+#include <QCloseEvent>
 #include <QDebug>
 
 /**
@@ -21,6 +22,7 @@ SearchResultDialog::SearchResultDialog(FriendManager* friendManager, QWidget *pa
     , addFriendButton(nullptr)
     , closeButton(nullptr)
     , isProcessing(false)
+    , ignoreLateResponse(false)
     , timeoutTimer(new QTimer(this))
 {
     SetupUI();  // 设置搜索结果对话框（UI界面）样式
@@ -171,6 +173,7 @@ void SearchResultDialog::OnAddFriendClicked(){
         return;
     }
     isProcessing = true;  // 设置添加好友请求状态
+    ignoreLateResponse = false;  // 重置忽略延迟响应标志
     addFriendButton->setEnabled(false);  // 禁用添加好友按钮
     closeButton->setEnabled(false);  // 禁用关闭按钮
     timeoutTimer->start(5000);  // 启动5秒时间定时器
@@ -192,11 +195,24 @@ void SearchResultDialog::OnCloseClicked(){
 }
 
 /**
+ * @brief 关闭事件重写，防止在处理中通过X按钮关闭对话框
+ * @param event 关闭事件
+ */
+void SearchResultDialog::closeEvent(QCloseEvent* event){
+    if(isProcessing){
+        event->ignore();
+        return;
+    }
+    QDialog::closeEvent(event);
+}
+
+/**
  * @brief 时间定时器超时后，自动触发自带的信号，自动调用槽函数
  */
 void SearchResultDialog::OnAddFriendTimeout(){
     timeoutTimer->stop();  // 停止时间定时器
     isProcessing = false;  // 设置添加好友请求状态
+    ignoreLateResponse = true;  // 设置忽略延迟响应标志
     addFriendButton->setEnabled(true);  // 启用添加好友按钮
     closeButton->setEnabled(true);  // 启用关闭按钮
     QMessageBox::warning(this, "错误", "请求超时");  // 错误弹窗
@@ -208,6 +224,9 @@ void SearchResultDialog::OnAddFriendTimeout(){
  * @param username 添加成功的用户名
  */
 void SearchResultDialog::OnFriendAdded(const QString& username){
+    if(ignoreLateResponse){  // 如果设置了忽略延迟响应标志
+        return;
+    }
     timeoutTimer->stop();  // 停止时间定时器
     isProcessing = false;  // 设置添加好友请求状态
     addFriendButton->setEnabled(true);  // 启用添加好友按钮
@@ -222,6 +241,9 @@ void SearchResultDialog::OnFriendAdded(const QString& username){
  * @param errorMsg 错误信息
  */
 void SearchResultDialog::OnFriendAddFailed(const QString& errorMsg){
+    if(ignoreLateResponse){  // 如果设置了忽略延迟响应标志
+        return;
+    }
     timeoutTimer->stop();  // 停止时间定时器
     isProcessing = false;  // 设置添加好友请求状态
     addFriendButton->setEnabled(true);  // 启用添加好友按钮

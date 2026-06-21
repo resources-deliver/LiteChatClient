@@ -160,10 +160,12 @@ void FriendManager::OnDataReceived(const QByteArray& data){
     QJsonParseError parseError;
     QJsonDocument doc = QJsonDocument::fromJson(data, &parseError);
     if(parseError.error != QJsonParseError::NoError){
+        qDebug() << "[FriendManager::OnDataReceived]JSON解析失败";
         return;
     }
     QJsonObject response = doc.object();
     QString type = response["type"].toString();
+    qDebug() << "[FriendManager::OnDataReceived]接收到响应数据，类型:" << type;
     if(type == "ADD_FRIEND_RESPONSE"){
         HandleAddFriendResponse(response);
     }

@@ -258,6 +258,10 @@ void UserManager::OnDataReceived(const QByteArray& data){
     else if(type == "HEARTBEAT"){
         // 心跳由服务器端管理，客户端仅接收并忽略
     }
+    else if(type == "ADD_FRIEND_RESPONSE" || type == "DEL_FRIEND_RESPONSE" ||
+            type == "FRIEND_LIST_RESPONSE" || type == "QUERY_FRIEND_RESPONSE"){
+        // 好友相关响应由FriendManager处理，此处忽略
+    }
     else{
         qDebug() << "[UserManager::OnDataReceived]未知的响应类型:" << type;  // Debug输出
     }

@@ -489,6 +489,7 @@ void MainWindow::OnFriendStatusChanged(const QString& username, UserStatus statu
  * @param info 好友信息
  */
 void MainWindow::OnQueryFriendResult(const FriendInfo& info){
+    qDebug() << "[MainWindow::OnQueryFriendResult]查询好友结果后自动调用槽函数";  // Debug输出
     SearchResultDialog searchResultDlg(friendManager, this);  // 创建搜索结果对话框
     searchResultDlg.SetResultInfo(info.username, info.status);  // 设置搜索结果信息
     if(isViewingFriendInfo){
@@ -496,7 +497,6 @@ void MainWindow::OnQueryFriendResult(const FriendInfo& info){
         isViewingFriendInfo = false;  // 重置标志
     }
     searchResultDlg.exec();  // 显示搜索结果对话框
-    qDebug() << "[MainWindow::OnQueryFriendResult]查询好友结果后自动调用槽函数";  // Debug输出
 }
 
 /**
