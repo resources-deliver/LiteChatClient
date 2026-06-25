@@ -8,7 +8,7 @@
 #include <QHostAddress>
 
 /**
- * @brief 网络管理器类，负责与服务器的TCP连接和数据收发
+ * @brief 网络管理器类，用于与服务器的TCP连接和数据收发
  */
 class NetworkManager : public QObject{
     Q_OBJECT
@@ -21,6 +21,8 @@ public:
     bool IsConnected() const;
     bool SendData(const QByteArray& data);
     void SetTimeout(int seconds);
+    QString GetServerIP() const;
+    int GetServerPort() const;
 
 signals:
     void Connected();
@@ -43,7 +45,7 @@ private:
     QString serverIP;  // 服务器IP地址
     int serverPort;    // 服务器端口号
     bool isConnected;  // 连接状态
-    int timeout;       // 连接超时时间（秒）
+    int timeout;       // 连接超时时间
     QByteArray receiveBuffer;  // 接收缓冲区
 };
 

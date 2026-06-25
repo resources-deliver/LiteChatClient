@@ -4,6 +4,8 @@
 #include "usermanager.h"
 #include "friendmanager.h"
 #include "messagemanager.h"
+#include "exceptionhandler.h"
+#include "clientlogger.h"
 #include "userinfodialog.h"
 #include "searchresultdialog.h"
 
@@ -51,6 +53,7 @@ MainWindow::MainWindow(NetworkManager* networkManager, UserManager* userManager,
     , sendButton(nullptr)
     , trayIcon(nullptr)
     , notificationBubble(nullptr)
+    , busyToast(nullptr)
     , isDeletingFriend(false)
     , isViewingFriendInfo(false)
     , isSendingMessage(false)
@@ -116,6 +119,10 @@ MainWindow::MainWindow(NetworkManager* networkManager, UserManager* userManager,
     // 消息通知后，手动触发自定义信号，自动调用槽函数
     connect(messageManager, &MessageManager::MessageNotify, this, &MainWindow::OnMessageNotify);
 
+    exceptionHandler = new ExceptionHandler(networkManager, this);  // 创建异常处理器
+    // 重连失败后，手动触发自定义信号，自动调用槽函数
+    connect(exceptionHandler, &ExceptionHandler::ReconnectFailed, this, &MainWindow::OnReconnectFailed);
+
     userManager->QueryUserStatus();  // 查询用户状态
     friendManager->GetFriendList();  // 获取好友列表
 
@@ -130,6 +137,7 @@ MainWindow::MainWindow(NetworkManager* networkManager, UserManager* userManager,
  * @brief MainWindow析构函数，用于释放动态分配的资源
  */
 MainWindow::~MainWindow(){
+    ClientLogger::GetInstance().WriteLog(LogLevel::INFO, "MainWindow", "主窗口关闭");
     delete ui;  // 释放主窗口（UI界面）的指针
 }
 
@@ -464,6 +472,7 @@ void MainWindow::OnDisconnected(){
         "background-color: #BFBFBF; border-radius: 6px; border: none;"
     );  // 设置状态指示灯样式（灰色圆形，离线）
     ui->statusbar->showMessage("连接已断开");  // 状态栏显示连接断开
+    ClientLogger::GetInstance().WriteLog(LogLevel::WARNING, "MainWindow", "网络连接已断开");
     qDebug() << "[MainWindow::OnDisconnected]连接断开后自动调用槽函数";  // Debug输出
 }
 
@@ -671,14 +680,23 @@ void MainWindow::OnQueryFriendFailed(const QString& errorMsg){
  */
 void MainWindow::OnDeleteFriendClicked(){
     if(isDeletingFriend){
+        ShowBusyToast();  // 显示防重复点击提示
+        ClientLogger::GetInstance().WriteLog(LogLevel::INFO, "MainWindow", "删除好友操作被拦截：正在处理中");
         return;  // 正在处理删除好友请求，忽略重复点击
     }
-    isDeletingFriend = true;  // 设置删除好友处理状态
     if(currentChatFriend.isEmpty()){
         QMessageBox::warning(this, "错误", "请先在好友列表中点击一个好友");
-        isDeletingFriend = false;  // 重置删除好友处理状态
         return;
     }
+    QMessageBox::StandardButton reply = QMessageBox::question(this, "确认删除好友",
+        QString("确定要删除好友 %1 吗？\n删除后，双方的历史聊天记录将清空。").arg(currentChatFriend),
+        QMessageBox::Yes | QMessageBox::No, QMessageBox::No);
+    if(reply != QMessageBox::Yes){
+        return;  // 用户取消删除
+    }
+    isDeletingFriend = true;  // 设置删除好友处理状态
+    ClientLogger::GetInstance().WriteLog(LogLevel::INFO, "MainWindow",
+        QString("发送删除好友请求: %1").arg(currentChatFriend));
     friendManager->DeleteFriend(currentChatFriend);  // 发送删除好友请求
     qDebug() << "[MainWindow::OnDeleteFriendClicked]删除好友按钮被点击后自动调用槽函数";  // Debug输出
 }
@@ -713,7 +731,15 @@ void MainWindow::OnFriendListContextMenu(const QPoint& pos){
         friendManager->QueryFriendInfo(username);  // 发送查询好友请求
     }
     else if(selectedAction == deleteAction){
+        QMessageBox::StandardButton reply = QMessageBox::question(this, "确认删除好友",
+            QString("确定要删除好友 %1 吗？\n删除后，双方的历史聊天记录将清空。").arg(username),
+            QMessageBox::Yes | QMessageBox::No, QMessageBox::No);
+        if(reply != QMessageBox::Yes){
+            return;  // 用户取消删除
+        }
         isDeletingFriend = true;  // 设置删除好友处理状态
+        ClientLogger::GetInstance().WriteLog(LogLevel::INFO, "MainWindow",
+            QString("发送删除好友请求: %1（右键菜单）").arg(username));
         friendManager->DeleteFriend(username);  // 发送删除好友请求
     }
     qDebug() << "[MainWindow::OnFriendListContextMenu]好友列表右键菜单请求后自动调用槽函数";  // Debug输出
@@ -744,6 +770,8 @@ void MainWindow::OnSendMessageClicked(){
         return;
     }
     if(isSendingMessage){
+        ShowBusyToast();  // 显示防重复点击提示
+        ClientLogger::GetInstance().WriteLog(LogLevel::INFO, "MainWindow", "发送消息操作被拦截：正在处理中");
         return;  // 正在发送消息，忽略重复点击
     }
     isSendingMessage = true;  // 设置发送消息处理状态
@@ -1007,4 +1035,47 @@ void MainWindow::ShowNotificationBubble(const QString& sender, const QString& su
             notificationBubble = nullptr;
         }
     });  // 5秒后自动删除通知气泡
+}
+
+/**
+ * @brief 显示防重复点击提示（1.5秒后自动消失）
+ */
+void MainWindow::ShowBusyToast(){
+    if(busyToast){
+        busyToast->deleteLater();  // 如果已有提示标签则先删除
+    }
+    busyToast = new QLabel("在加班了，别急", this);  // 创建提示标签
+    busyToast->setStyleSheet(
+        "QLabel {"
+        "   background-color: #FFF7E6;"
+        "   color: #FA8C16;"
+        "   border: 1px solid #FFD591;"
+        "   border-radius: 4px;"
+        "   padding: 8px 16px;"
+        "   font-size: 13px;"
+        "}"
+    );  // 设置提示标签样式（橙色警告风格）
+    busyToast->setAlignment(Qt::AlignCenter);  // 设置文本居中
+    busyToast->setFixedHeight(36);  // 设置固定高度
+    busyToast->adjustSize();  // 调整大小
+    busyToast->move((width() - busyToast->width()) / 2, 100);  // 居中显示在顶部下方
+    busyToast->raise();  // 置于顶层
+    busyToast->show();  // 显示提示标签
+    QTimer::singleShot(1500, this, [this](){
+        if(busyToast){
+            busyToast->deleteLater();
+            busyToast = nullptr;
+        }
+    });  // 1.5秒后自动删除提示标签
+}
+
+/**
+ * @brief 重连失败后，手动触发自定义信号，自动调用槽函数
+ * @param errorMsg 错误信息
+ */
+void MainWindow::OnReconnectFailed(const QString& errorMsg){
+    ClientLogger::GetInstance().WriteLog(LogLevel::ERROR, "MainWindow",
+        QString("重连失败: %1").arg(errorMsg));
+    QMessageBox::warning(this, "错误", errorMsg);
+    qDebug() << "[MainWindow::OnReconnectFailed]重连失败后自动调用槽函数" << errorMsg;  // Debug输出
 }

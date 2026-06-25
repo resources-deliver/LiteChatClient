@@ -33,31 +33,31 @@ UserManager::~UserManager(){}
  * @return 是否成功发送注册请求
  */
 bool UserManager::RegisterUser(const QString& username, const QString& password){
-    bool result = ValidateUsername(username);  // 验证用户名格式
+    bool result = ValidateUsername(username);
     if(!result){
-        emit RegisterFailed("用户名不符合格式");  // 手动触发自定义注册失败信号
+        emit RegisterFailed("用户名不符合格式");  // 手动触发自定义注册失败信号，通知UI层
         return false;
     }
-    result = ValidatePassword(password);  // 验证密码长度
+    result = ValidatePassword(password);
     if(!result){
         emit RegisterFailed("密码长度至少为6位");
         return false;
     }
-    QString encryptedPassword = EncryptPassword(password);  // 加密密码
+    QString encryptedPassword = EncryptPassword(password);
     QJsonObject dataObj;  // 注册请求数据对象
-    dataObj["username"] = username;  // 设置用户名
-    dataObj["password"] = encryptedPassword;  // 设置加密后的密码
-    QJsonObject requestObj;  // 请求对象
-    requestObj["type"] = "REGISTER";  // 设置请求类型为注册
-    requestObj["data"] = dataObj;  // 设置请求数据
+    dataObj["username"] = username;  // 注册请求数据（用户名）
+    dataObj["password"] = encryptedPassword;  // 注册请求数据（加密后的密码）
+    QJsonObject requestObj;  // 注册请求对象
+    requestObj["type"] = "REGISTER";  // 注册请求类型
+    requestObj["data"] = dataObj;  // 注册请求数据
     QJsonDocument doc(requestObj);  // 将请求对象转换为JSON文档
     QByteArray requestData = doc.toJson(QJsonDocument::Compact);  // 将JSON文档转换为字节数组
-    bool sendResult = networkManager->SendData(requestData);  // 发送请求数据
+    bool sendResult = networkManager->SendData(requestData);
     if(!sendResult){
         emit RegisterFailed("注册失败");
         return false;
     }
-    qDebug() << "[UserManager::RegisterUser]注册请求发送成功";  // Debug输出
+    qDebug() << "[UserManager::RegisterUser]注册请求发送成功";
     return true;
 }
 
@@ -68,32 +68,32 @@ bool UserManager::RegisterUser(const QString& username, const QString& password)
  * @return 是否成功发送登录请求
  */
 bool UserManager::LoginUser(const QString& username, const QString& password){
-    bool result = ValidateUsername(username);  // 验证用户名格式
+    bool result = ValidateUsername(username);
     if(!result){
-        emit LoginFailed("用户名不符合格式");  // 手动触发自定义登录失败信号
+        emit LoginFailed("用户名不符合格式");  // 手动触发自定义登录失败信号，通知UI层
         return false;
     }
-    result = ValidatePassword(password);  // 验证密码长度
+    result = ValidatePassword(password);
     if(!result){
         emit LoginFailed("密码长度至少为6位");
         return false;
     }
-    QString encryptedPassword = EncryptPassword(password);  // 加密密码
+    QString encryptedPassword = EncryptPassword(password);
     QJsonObject dataObj;  // 登录请求数据对象
-    dataObj["username"] = username;  // 设置用户名
-    dataObj["password"] = encryptedPassword;  // 设置加密后的密码
-    QJsonObject requestObj;  // 请求对象
-    requestObj["type"] = "LOGIN";  // 设置请求类型为登录
-    requestObj["data"] = dataObj;  // 设置请求数据
+    dataObj["username"] = username;  // 登录请求数据（用户名）
+    dataObj["password"] = encryptedPassword;  // 登录请求数据（加密后的密码）
+    QJsonObject requestObj;  // 登录请求对象
+    requestObj["type"] = "LOGIN";  // 登录请求类型
+    requestObj["data"] = dataObj;  // 登录请求数据
     QJsonDocument doc(requestObj);  // 将请求对象转换为JSON文档
     QByteArray requestData = doc.toJson(QJsonDocument::Compact);  // 将JSON文档转换为字节数组
-    currentUsername = username;  // 设置当前登录用户名
-    bool sendResult = networkManager->SendData(requestData);  // 发送请求数据
+    currentUsername = username;
+    bool sendResult = networkManager->SendData(requestData);
     if(!sendResult){
         emit LoginFailed("登录失败");
         return false;
     }
-    qDebug() << "[UserManager::LoginUser]登录请求发送成功";  // Debug输出
+    qDebug() << "[UserManager::LoginUser]登录请求发送成功";
     return true;
 }
 
@@ -106,7 +106,7 @@ bool UserManager::LoginUser(const QString& username, const QString& password){
  */
 bool UserManager::UpdateUserInfo(const QString& newUsername, const QString& newPassword, const QString& verifyPassword){
     if(verifyPassword.isEmpty()){  // 如果当前密码验证为空
-        emit UpdateFailed("密码不能为空");  // 手动触发自定义更新失败信号
+        emit UpdateFailed("密码不能为空");  // 手动触发自定义更新失败信号，通知UI层
         return false;
     }
     if(newUsername.isEmpty() && newPassword.isEmpty()){  // 如果新用户名和新密码都为空
@@ -121,25 +121,25 @@ bool UserManager::UpdateUserInfo(const QString& newUsername, const QString& newP
         emit UpdateFailed("密码长度至少为6位");
         return false;
     }
-    QJsonObject dataObj;  // 更新用户数据对象
-    dataObj["verify_password"] = EncryptPassword(verifyPassword);  // 加密当前密码验证
+    QJsonObject dataObj;  // 更新信息请求数据对象
+    dataObj["verify_password"] = EncryptPassword(verifyPassword);  // 更新信息请求数据（当前密码验证）
     if(!newUsername.isEmpty()){  // 如果新用户名不为空
-        dataObj["new_username"] = newUsername;  // 设置新用户名
+        dataObj["new_username"] = newUsername;  // 更新信息请求数据（新用户名）
     }
     if(!newPassword.isEmpty()){  // 如果新密码不为空
-        dataObj["new_password"] = EncryptPassword(newPassword);  // 加密新密码
+        dataObj["new_password"] = EncryptPassword(newPassword);  // 更新信息请求数据（加密后的新密码）
     }
-    QJsonObject requestObj;  // 更新用户请求对象
-    requestObj["type"] = "UPDATE_USER";  // 设置请求类型为更新用户信息
-    requestObj["data"] = dataObj;  // 设置请求数据
-    QJsonDocument doc(requestObj);  // 将请求对象转换为JSON文档
+    QJsonObject requestObj;  // 更新信息请求对象
+    requestObj["type"] = "UPDATE_USER";  // 更新信息请求类型
+    requestObj["data"] = dataObj;  // 更新信息请求数据
+    QJsonDocument doc(requestObj);  // 将更新信息请求对象转换为JSON文档
     QByteArray requestData = doc.toJson(QJsonDocument::Compact);  // 将JSON文档转换为字节数组
-    bool sendResult = networkManager->SendData(requestData);  // 发送请求数据
+    bool sendResult = networkManager->SendData(requestData);
     if(!sendResult){
         emit UpdateFailed("更新失败");
         return false;
     }
-    qDebug() << "[UserManager::UpdateUserInfo]更新请求发送成功";  // Debug输出
+    qDebug() << "[UserManager::UpdateUserInfo]更新请求发送成功";
     return true;
 }
 
@@ -148,19 +148,19 @@ bool UserManager::UpdateUserInfo(const QString& newUsername, const QString& newP
  * @return 当前用户状态
  */
 UserStatus UserManager::QueryUserStatus(){
-    QJsonObject dataObj;  // 查询用户状态数据对象
-    dataObj["username"] = currentUsername;  // 设置用户名
+    QJsonObject dataObj;  // 查询用户状态请求数据对象
+    dataObj["username"] = currentUsername;  // 查询用户状态请求数据（用户名）
     QJsonObject requestObj;  // 查询用户状态请求对象
-    requestObj["type"] = "QUERY_STATUS";  // 设置请求类型为查询用户状态
-    requestObj["data"] = dataObj;  // 设置请求数据
-    QJsonDocument doc(requestObj);  // 将请求对象转换为JSON文档
+    requestObj["type"] = "QUERY_STATUS";  // 查询用户状态请求类型
+    requestObj["data"] = dataObj;  // 查询用户状态请求数据
+    QJsonDocument doc(requestObj);  // 将查询用户状态请求对象转换为JSON文档
     QByteArray requestData = doc.toJson(QJsonDocument::Compact);  // 将JSON文档转换为字节数组
-    bool sendResult = networkManager->SendData(requestData);  // 发送请求数据
-    if(!sendResult){  // 如果发送失败
-        qDebug() << "[UserManager::QueryUserStatus]发送请求失败";  // Debug输出
+    bool sendResult = networkManager->SendData(requestData);
+    if(!sendResult){
+        qDebug() << "[UserManager::QueryUserStatus]发送请求失败";
         return UserStatus();
     }
-    qDebug() << "[UserManager::QueryUserStatus]发送请求成功";  // Debug输出
+    qDebug() << "[UserManager::QueryUserStatus]发送请求成功";
     return currentUserStatus;
 }
 
@@ -169,8 +169,8 @@ UserStatus UserManager::QueryUserStatus(){
  * @param status 用户状态
  */
 void UserManager::UpdateUserStatusDisplay(UserStatus status){
-    currentUserStatus = status;  // 更新当前用户状态
-    emit StatusChanged(status);  // 手动触发自定义状态改变信号
+    currentUserStatus = status;
+    emit StatusChanged(status);  // 手动触发自定义状态改变信号，通知UI层
 }
 
 /**
@@ -179,8 +179,9 @@ void UserManager::UpdateUserStatusDisplay(UserStatus status){
  * @return MD5加密后的密码字符串
  */
 QString UserManager::EncryptPassword(const QString& password){
-    QByteArray hash = QCryptographicHash::hash(password.toUtf8(), QCryptographicHash::Md5);
-    return hash.toHex();
+    QByteArray hash = QCryptographicHash::hash(password.toUtf8(), QCryptographicHash::Md5);  // 使用MD5加密密码
+    QString hex = hash.toHex();  // 将加密后的密码转换为十六进制字符串
+    return hex;
 }
 
 /**
@@ -189,8 +190,9 @@ QString UserManager::EncryptPassword(const QString& password){
  * @return 是否合法
  */
 bool UserManager::ValidateUsername(const QString& username){
-    QRegularExpression regex("^[a-zA-Z0-9_]{3,20}$");
-    return regex.match(username).hasMatch();
+    QRegularExpression regex("^[a-zA-Z0-9_]{3,20}$");  // 编译正则表达式
+    bool matchResult = regex.match(username).hasMatch();  // 匹配用户名
+    return matchResult;
 }
 
 /**
@@ -199,7 +201,8 @@ bool UserManager::ValidateUsername(const QString& username){
  * @return 是否合法
  */
 bool UserManager::ValidatePassword(const QString& password){
-    return password.length() >= 6;
+    bool matchResult = password.length() >= 6;  // 密码长度至少为6位
+    return matchResult;
 }
 
 /**
@@ -227,19 +230,19 @@ void UserManager::SetCurrentUsername(const QString& username){
 }
 
 /**
- * @brief 接收到数据槽函数
+ * @brief 槽函数，用于响应接收数据后手动触发的自定义信号
  * @param data 接收到的数据
  */
 void UserManager::OnDataReceived(const QByteArray& data){
-    QJsonParseError parseError;
-    QJsonDocument doc = QJsonDocument::fromJson(data, &parseError);
-    if(parseError.error != QJsonParseError::NoError){
-        qDebug() << "[UserManager::OnDataReceived]JSON解析失败" << parseError.errorString();  // Debug输出
+    QJsonParseError parseError;  // JSON解析错误对象
+    QJsonDocument doc = QJsonDocument::fromJson(data, &parseError);  // 将字节数组转换为JSON文档
+    if(parseError.error != QJsonParseError::NoError){  // 如果解析失败
+        qDebug() << "[UserManager::OnDataReceived]JSON解析失败" << parseError.errorString();
         return;
     }
-    QJsonObject response = doc.object();
-    QString type = response["type"].toString();
-    qDebug() << "[UserManager::OnDataReceived]接收到响应数据，类型:" << type;  // Debug输出
+    QJsonObject response = doc.object();  // 从JSON文档中提取响应对象
+    QString type = response["type"].toString();  // 从响应对象中提取类型字段
+    qDebug() << "[UserManager::OnDataReceived]接收到响应数据，类型:" << type;
     if(type == "REGISTER_RESPONSE"){
         HandleRegisterResponse(response);
     }
@@ -263,7 +266,7 @@ void UserManager::OnDataReceived(const QByteArray& data){
         // 好友相关响应由FriendManager处理，此处忽略
     }
     else{
-        qDebug() << "[UserManager::OnDataReceived]未知的响应类型:" << type;  // Debug输出
+        qDebug() << "[UserManager::OnDataReceived]未知的响应类型:" << type;
     }
 }
 
@@ -272,13 +275,13 @@ void UserManager::OnDataReceived(const QByteArray& data){
  * @param response 响应JSON对象
  */
 void UserManager::HandleRegisterResponse(const QJsonObject& response){
-    int code = response["code"].toInt();
+    int code = response["code"].toInt();  // 从响应对象中提取状态码字段
     switch(code){
         case 0:
-            emit RegisterSuccess();
+            emit RegisterSuccess();  // 手动触发自定义注册成功信号，通知UI层
             break;
         case 1002:
-            emit RegisterFailed("服务器接收请求失败");
+            emit RegisterFailed("服务器接收请求失败");  // 手动触发自定义注册失败信号，通知UI层
             break;
         case 2001:
             emit RegisterFailed("用户名不符合格式");
@@ -300,13 +303,13 @@ void UserManager::HandleRegisterResponse(const QJsonObject& response){
  * @param response 响应JSON对象
  */
 void UserManager::HandleLoginResponse(const QJsonObject& response){
-    int code = response["code"].toInt();
+    int code = response["code"].toInt();  // 从响应对象中提取状态码字段
     switch(code){
         case 0:
-            emit LoginSuccess();
+            emit LoginSuccess();  // 手动触发自定义登录成功信号，通知UI层
             break;
         case 1002:
-            emit LoginFailed("服务器接收请求失败");
+            emit LoginFailed("服务器接收请求失败");  // 手动触发自定义登录失败信号，通知UI层
             break;
         case 2003:
             emit LoginFailed("该用户不存在");
@@ -331,13 +334,13 @@ void UserManager::HandleLoginResponse(const QJsonObject& response){
  * @param response 响应JSON对象
  */
 void UserManager::HandleUpdateResponse(const QJsonObject& response){
-    int code = response["code"].toInt();
+    int code = response["code"].toInt();  // 从响应对象中提取状态码字段
     switch(code){
         case 0:
-            emit UpdateSuccess();
+            emit UpdateSuccess();  // 手动触发自定义修改成功信号，通知UI层
             break;
         case 1002:
-            emit UpdateFailed("服务器接收请求失败");
+            emit UpdateFailed("服务器接收请求失败");  // 手动触发自定义修改失败信号，通知UI层
             break;
         case 2006:
             emit UpdateFailed("验证密码错误");
@@ -359,19 +362,19 @@ void UserManager::HandleUpdateResponse(const QJsonObject& response){
  * @param response 响应JSON对象
  */
 void UserManager::HandleStatusResponse(const QJsonObject& response){
-    int code = response["code"].toInt();
+    int code = response["code"].toInt();  // 从响应对象中提取状态码字段
     if(code == 0){
-        QString status = response["data"].toObject()["status"].toString();
+        QString status = response["data"].toObject()["status"].toString();  // 从响应对象中提取状态字段
         if(status == "online"){
             currentUserStatus = UserStatus::Online;
         }
         else{
             currentUserStatus = UserStatus::Offline;
         }
-        emit StatusChanged(currentUserStatus);
+        emit StatusChanged(currentUserStatus);  // 手动触发自定义状态变更信号，通知UI层
     }
     else if(code == 5001){
-        emit UpdateFailed("服务器罢工了...");
+        emit UpdateFailed("服务器罢工了...");  // 手动触发自定义修改失败信号，通知UI层
     }
 }
 
@@ -380,10 +383,10 @@ void UserManager::HandleStatusResponse(const QJsonObject& response){
  * @param notify 通知JSON对象
  */
 void UserManager::HandleStatusNotify(const QJsonObject& notify){
-    QJsonObject data = notify["data"].toObject();
-    QString username = data["username"].toString();
-    QString status = data["status"].toString();
-    qDebug() << "[UserManager::HandleStatusNotify]收到状态变更通知，用户名:" << username << "，状态:" << status;  // Debug输出
+    QJsonObject data = notify["data"].toObject();  // 从通知对象中提取数据字段
+    QString username = data["username"].toString();  // 从数据对象中提取用户名字段
+    QString status = data["status"].toString();  // 从数据对象中提取状态字段
+    qDebug() << "[UserManager::HandleStatusNotify]收到状态变更通知，用户名:" << username << "，状态:" << status;
     if(username == currentUsername){
         if(status == "online"){
             currentUserStatus = UserStatus::Online;
@@ -391,6 +394,6 @@ void UserManager::HandleStatusNotify(const QJsonObject& notify){
         else{
             currentUserStatus = UserStatus::Offline;
         }
-        emit StatusChanged(currentUserStatus);
+        emit StatusChanged(currentUserStatus);  // 手动触发自定义状态变更信号，通知UI层
     }
 }

@@ -29,7 +29,7 @@ NetworkManager::NetworkManager(QObject *parent)
  * @brief NetworkManager析构函数，用于释放动态分配的资源
  */
 NetworkManager::~NetworkManager(){
-    DisconnectFromServer();  // 断开与服务器的连接
+    DisconnectFromServer();
 }
 
 /**
@@ -39,19 +39,19 @@ NetworkManager::~NetworkManager(){
  * @return 连接请求是否成功发起
  */
 bool NetworkManager::ConnectToServer(const QString& ip, int port){
-    if(isConnected){  // 如果已连接
-        emit ErrorOccurred("已连接到服务器");  // 手动触发自定义错误信号
+    if(isConnected){
+        emit ErrorOccurred("已连接到服务器");  // 手动触发自定义连接错误信号，通知UI层
         return false;
     }
-    serverIP = ip;  // 设置服务器IP地址
-    serverPort = port;  // 设置服务器端口
+    serverIP = ip;
+    serverPort = port;
     socket->connectToHost(QHostAddress(ip), port);  // 连接到服务器
     bool result = socket->waitForConnected(timeout * 1000);  // 等待连接成功
-    if(!result){  // 如果连接超时
-        emit ErrorOccurred("连接超时");  // 手动触发自定义错误信号
+    if(!result){
+        emit ErrorOccurred("连接超时");
         return false;
     }
-    qDebug() << "[NetworkManager::ConnectToServer]连接成功IP地址:" << ip;  // Debug输出
+    qDebug() << "[NetworkManager::ConnectToServer]连接成功IP地址:" << ip;
     return true;
 }
 
@@ -66,7 +66,7 @@ void NetworkManager::DisconnectFromServer(){
         }
     }
     receiveBuffer.clear();  // 清空接收缓冲区
-    qDebug() << "[NetworkManager::DisconnectFromServer]已断开与服务器的连接";  // Debug输出
+    qDebug() << "[NetworkManager::DisconnectFromServer]已断开与服务器的连接";
 }
 
 /**
@@ -74,7 +74,7 @@ void NetworkManager::DisconnectFromServer(){
  * @return 是否已连接
  */
 bool NetworkManager::IsConnected() const{
-    return isConnected;  // 返回当前连接状态
+    return isConnected;
 }
 
 /**
@@ -83,18 +83,18 @@ bool NetworkManager::IsConnected() const{
  * @return 是否发送成功
  */
 bool NetworkManager::SendData(const QByteArray& data){
-    if(!isConnected){  // 如果未连接
-        emit ErrorOccurred("未连接到服务器,无法发送数据");  // 手动触发自定义错误信号
+    if(!isConnected){
+        emit ErrorOccurred("未连接到服务器,无法发送数据");  // 手动触发自定义连接错误信号，通知UI层
         return false;
     }
-    QByteArray package = PackageMessage(data);  // 封装消息
+    QByteArray package = PackageMessage(data);
     qint64 bytesWritten = socket->write(package);  // 发送数据
     if(bytesWritten == -1){
         emit ErrorOccurred("发送数据失败");
         return false;
     }
     bool result = socket->waitForBytesWritten(timeout * 1000);  // 等待数据发送完成
-    if(!result){  // 如果发送超时
+    if(!result){
         emit ErrorOccurred("发送超时");
         return false;
     }
@@ -107,28 +107,44 @@ bool NetworkManager::SendData(const QByteArray& data){
  * @param seconds 超时时间（秒）
  */
 void NetworkManager::SetTimeout(int seconds){
-    timeout = seconds;  // 设置超时时间
+    timeout = seconds;
 }
 
 /**
- * @brief 连接成功后，自动触发自带的信号，自动调用槽函数
+ * @brief 获取服务器IP地址
+ * @return 服务器IP地址
+ */
+QString NetworkManager::GetServerIP() const{
+    return serverIP;
+}
+
+/**
+ * @brief 获取服务器端口号
+ * @return 服务器端口号
+ */
+int NetworkManager::GetServerPort() const{
+    return serverPort;
+}
+
+/**
+ * @brief 槽函数，用于响应连接成功后自动触发自带的信号
  */
 void NetworkManager::OnConnected(){
-    isConnected = true;  // 设置连接状态
-    emit Connected();  // 手动触发自定义连接成功信号
+    isConnected = true;
+    emit Connected();  // 手动触发自定义连接成功信号，通知UI层
 }
 
 /**
- * @brief 连接断开后，自动触发自带的信号，自动调用槽函数
+ * @brief 槽函数，用于响应连接断开后自动触发自带的信号
  */
 void NetworkManager::OnDisconnected(){
-    isConnected = false;  // 设置连接状态
+    isConnected = false;
     receiveBuffer.clear();  // 清空接收缓冲区
-    emit Disconnected();  // 手动触发自定义断开连接信号
+    emit Disconnected();  // 手动触发自定义断开连接信号，通知UI层
 }
 
 /**
- * @brief 有数据可读时，自动触发自带的信号，自动调用槽函数
+ * @brief 槽函数，用于响应有数据可读时自动触发自带的信号
  */
 void NetworkManager::OnReadyRead(){
     receiveBuffer.append(socket->readAll());  // 读取所有可读数据
@@ -136,23 +152,23 @@ void NetworkManager::OnReadyRead(){
         QByteArray header = receiveBuffer.left(4);  // 提取消息头
         quint32 bodyLength = ParseMessageHeader(header);
         if(bodyLength == 0 || bodyLength > 65536){  // 若消息体长度不合法
-            emit ErrorOccurred("协议错误：消息体长度不合法");  // 手动触发自定义错误信号
-            DisconnectFromServer();  // 断开与服务端连接
+            emit ErrorOccurred("协议错误：消息体长度不合法");  // 手动触发自定义错误信号，通知UI层
+            DisconnectFromServer();
             return;
         }
         if(receiveBuffer.size() < 4 + bodyLength){  // 若接收缓冲区数据量不足
-            qDebug() << "[NetworkManager::OnReadyRead]接收缓冲区数据量不足，等待更多数据";  // Debug输出
+            qDebug() << "[NetworkManager::OnReadyRead]接收缓冲区数据量不足，等待更多数据";
             break;
         }
         QByteArray body = receiveBuffer.mid(4, bodyLength);  // 提取消息体
         receiveBuffer.remove(0, 4 + bodyLength);  // 移除已处理数据
         qDebug() << "[NetworkManager::OnReadyRead]收到数据:" << body.toHex();  // Debug输出
-        emit DataReceived(body);  // 手动触发自定义数据接收信号
+        emit DataReceived(body);  // 手动触发自定义数据接收信号，通知UI层
     }
 }
 
 /**
- * @brief 错误发生时，自动触发自带的信号，自动调用槽函数
+ * @brief 槽函数，用于响应错误发生时自动触发自带的信号
  * @param socketError Socket错误类型
  */
 void NetworkManager::OnError(QAbstractSocket::SocketError socketError){
@@ -177,7 +193,7 @@ void NetworkManager::OnError(QAbstractSocket::SocketError socketError){
             errorMsg = socket->errorString();
             break;
     }
-    emit ErrorOccurred(errorMsg);  // 手动触发自定义错误信号
+    emit ErrorOccurred(errorMsg);  // 手动触发自定义连接错误信号，通知UI层
 }
 
 /**

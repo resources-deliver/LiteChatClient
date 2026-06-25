@@ -22,7 +22,11 @@ class MainWindow;
 }
 QT_END_NAMESPACE
 
+/**
+ * @brief 网络管理器的类声明
+ */
 class NetworkManager;
+class ExceptionHandler;
 
 /**
  * @brief 主窗口类，负责显示聊天界面和好友管理
@@ -31,7 +35,13 @@ class MainWindow : public QMainWindow{
     Q_OBJECT
 
 public:
-    explicit MainWindow(NetworkManager* networkManager, UserManager* userManager, FriendManager* friendManager, MessageManager* messageManager, QWidget *parent = nullptr);
+    explicit MainWindow(
+        NetworkManager* networkManager, 
+        UserManager* userManager, 
+        FriendManager* friendManager, 
+        MessageManager* messageManager, 
+        QWidget *parent = nullptr
+    );
     ~MainWindow() override;
 
 private slots:
@@ -59,6 +69,7 @@ private slots:
     void OnMessageSendFailed(const QString& errorMsg);
     void OnHistoryFailed(const QString& errorMsg);
     void OnMessageNotify(const QString& sender, int count);
+    void OnReconnectFailed(const QString& errorMsg);
 
 private:
     void SetupTopBar(QVBoxLayout* mainLayout);
@@ -76,6 +87,7 @@ private:
     void ScrollMessageListToBottom();
     QString FormatTimestamp(const QString& timestamp) const;
     void ShowNotificationBubble(const QString& sender, const QString& summary);
+    void ShowBusyToast();
 
 private:
     Ui::MainWindow *ui;  // 主窗口的（UI界面）的指针
@@ -83,6 +95,7 @@ private:
     UserManager* userManager;  // 用户管理器的指针
     FriendManager* friendManager;  // 好友管理器的指针
     MessageManager* messageManager;  // 消息管理器的指针
+    ExceptionHandler* exceptionHandler;  // 异常处理器的指针
     QLabel* avatarLabel;  // 头像标签的指针
     QLabel* usernameLabel;  // 用户名标签的指针
     QLabel* statusIndicator;  // 状态指示器标签的指针
@@ -99,6 +112,7 @@ private:
     QPushButton* sendButton;  // 发送按钮的指针
     QSystemTrayIcon* trayIcon;  // 系统托盘图标指针
     QLabel* notificationBubble;  // 通知气泡标签指针
+    QLabel* busyToast;  // 防重复点击提示标签指针
     QString currentChatFriend;  // 当前聊天好友用户名
     bool isDeletingFriend;  // 删除好友处理状态
     bool isViewingFriendInfo;  // 查看好友资料标志

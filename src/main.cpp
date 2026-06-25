@@ -6,8 +6,11 @@
 #include "usermanager.h"
 #include "friendmanager.h"
 #include "messagemanager.h"
+#include "clientlogger.h"
 
 #include <QApplication>
+#include <QDir>
+#include <QStandardPaths>
 
 #ifdef Q_OS_WIN
 #include <windows.h>
@@ -25,6 +28,11 @@ int main(int argc, char *argv[]){
 #endif
     QApplication a(argc, argv);
     qInstallMessageHandler(customMessageHandler);
+
+    QString logDir = QStandardPaths::writableLocation(QStandardPaths::AppDataLocation) + "/logs";
+    ClientLogger::GetInstance().InitLogger(logDir);
+    ClientLogger::GetInstance().WriteLog(LogLevel::INFO, "Main", "LiteChat客户端启动");
+
     NetworkManager networkManager;
     UserManager userManager(&networkManager);
     FriendManager friendManager(&networkManager);

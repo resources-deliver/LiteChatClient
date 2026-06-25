@@ -25,7 +25,7 @@ SearchResultDialog::SearchResultDialog(FriendManager* friendManager, QWidget *pa
     , ignoreLateResponse(false)
     , timeoutTimer(new QTimer(this))
 {
-    SetupUI();  // 设置搜索结果对话框（UI界面）样式
+    SetupUI();
 
     // 添加好友按钮被点击后，自动触发自带的信号，自动调用槽函数
     connect(addFriendButton, &QPushButton::clicked, this, &SearchResultDialog::OnAddFriendClicked);
@@ -51,9 +51,9 @@ SearchResultDialog::~SearchResultDialog(){}
  */
 void SearchResultDialog::SetResultInfo(const QString& username, UserStatus status){
     queriedUsername = username;
-    usernameLabel->setText("用户名：" + username);
+    usernameLabel->setText("用户名：" + username);  // 设置用户名标签的文本
     if(status == UserStatus::Online){
-        statusIndicator->setStyleSheet("background-color: #52C41A; border-radius: 6px; border: none;");
+        statusIndicator->setStyleSheet("background-color: #52C41A; border-radius: 6px; border: none;");  // 设置状态指示器的样式
         statusLabel->setText("状态：在线");
     }
     else{
@@ -68,8 +68,8 @@ void SearchResultDialog::SetResultInfo(const QString& username, UserStatus statu
  */
 void SearchResultDialog::SetViewOnlyMode(bool viewOnly){
     if(viewOnly){
-        addFriendButton->hide();
-        setWindowTitle("好友资料");
+        addFriendButton->hide();  // 隐藏添加好友按钮
+        setWindowTitle("好友资料");  // 设置窗口标题
     }
 }
 
@@ -164,34 +164,34 @@ void SearchResultDialog::ShowBusyMessage(){
 }
 
 /**
- * @brief 添加好友按钮被点击后，自动触发自带的信号，自动调用槽函数
+ * @brief 槽函数，用于响应添加好友按钮被点击后自动触发自带的信号
  */
 void SearchResultDialog::OnAddFriendClicked(){
-    if(isProcessing){  // 如果正在处理添加好友请求
+    if(isProcessing){
         qDebug() << "[SearchResultDialog::OnAddFriendClicked]正在处理添加好友请求, 请稍后";
-        ShowBusyMessage();  // 信息弹窗
+        ShowBusyMessage();
         return;
     }
-    isProcessing = true;  // 设置添加好友请求状态
-    ignoreLateResponse = false;  // 重置忽略延迟响应标志
+    isProcessing = true;
+    ignoreLateResponse = false;
     addFriendButton->setEnabled(false);  // 禁用添加好友按钮
     closeButton->setEnabled(false);  // 禁用关闭按钮
     timeoutTimer->start(5000);  // 启动5秒时间定时器
     qDebug() << "[SearchResultDialog::OnAddFriendClicked]客户端发送添加好友请求到服务器";
-    friendManager->AddFriend(queriedUsername);  // 添加好友
+    friendManager->AddFriend(queriedUsername);
 }
 
 /**
- * @brief 关闭按钮被点击后，自动触发自带的信号，自动调用槽函数
+ * @brief 槽函数，用于响应关闭按钮被点击后自动触发自带的信号
  */
 void SearchResultDialog::OnCloseClicked(){
-    if(isProcessing){  // 如果正在处理添加好友请求
+    if(isProcessing){
         qDebug() << "[SearchResultDialog::OnCloseClicked]正在处理添加好友请求, 请稍后";
-        ShowBusyMessage();  // 信息弹窗
+        ShowBusyMessage();
         return;
     }
     qDebug() << "[SearchResultDialog::OnCloseClicked]用户点击了关闭按钮";
-    reject();
+    reject();  // 关闭对话框
 }
 
 /**
@@ -200,19 +200,19 @@ void SearchResultDialog::OnCloseClicked(){
  */
 void SearchResultDialog::closeEvent(QCloseEvent* event){
     if(isProcessing){
-        event->ignore();
+        event->ignore();  // 忽略关闭事件
         return;
     }
-    QDialog::closeEvent(event);
+    QDialog::closeEvent(event);  // 处理关闭事件
 }
 
 /**
- * @brief 时间定时器超时后，自动触发自带的信号，自动调用槽函数
+ * @brief 槽函数，用于响应时间定时器超时后自动触发自带的信号
  */
 void SearchResultDialog::OnAddFriendTimeout(){
     timeoutTimer->stop();  // 停止时间定时器
-    isProcessing = false;  // 设置添加好友请求状态
-    ignoreLateResponse = true;  // 设置忽略延迟响应标志
+    isProcessing = false;
+    ignoreLateResponse = true;
     addFriendButton->setEnabled(true);  // 启用添加好友按钮
     closeButton->setEnabled(true);  // 启用关闭按钮
     QMessageBox::warning(this, "错误", "请求超时");  // 错误弹窗
@@ -220,36 +220,36 @@ void SearchResultDialog::OnAddFriendTimeout(){
 }
 
 /**
- * @brief 添加好友成功后，手动触发自定义信号，自动调用槽函数
+ * @brief 槽函数，用于响应添加好友成功后手动触发的自定义信号
  * @param username 添加成功的用户名
  */
 void SearchResultDialog::OnFriendAdded(const QString& username){
-    if(ignoreLateResponse){  // 如果设置了忽略延迟响应标志
+    if(ignoreLateResponse){
         return;
     }
     timeoutTimer->stop();  // 停止时间定时器
-    isProcessing = false;  // 设置添加好友请求状态
+    isProcessing = false;
     addFriendButton->setEnabled(true);  // 启用添加好友按钮
     closeButton->setEnabled(true);  // 启用关闭按钮
-    QMessageBox::information(this, "成功", "添加好友成功");  // 成功弹窗
+    QMessageBox::information(this, "成功", "添加好友成功");  // 信息弹窗
     qDebug() << "[SearchResultDialog::OnFriendAdded]客户端接收添加好友成功响应,添加成功";
     accept();  // 接受添加成功信号
 }
 
 /**
- * @brief 添加好友失败后，手动触发自定义信号，自动调用槽函数
+ * @brief 槽函数，用于响应添加好友失败后手动触发的自定义信号
  * @param errorMsg 错误信息
  */
 void SearchResultDialog::OnFriendAddFailed(const QString& errorMsg){
-    if(ignoreLateResponse){  // 如果设置了忽略延迟响应标志
+    if(ignoreLateResponse){
         return;
     }
     timeoutTimer->stop();  // 停止时间定时器
-    isProcessing = false;  // 设置添加好友请求状态
+    isProcessing = false;
     addFriendButton->setEnabled(true);  // 启用添加好友按钮
     closeButton->setEnabled(true);  // 启用关闭按钮
     if(errorMsg == "该用户不存在"){
-        QMessageBox::warning(this, "错误", "该用户不存在");
+        QMessageBox::warning(this, "错误", "该用户不存在");  // 错误弹窗
     }
     else if(errorMsg == "对方已是您的好友"){
         QMessageBox::information(this, "提示", "对方已是您的好友");

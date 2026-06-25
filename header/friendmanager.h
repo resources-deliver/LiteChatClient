@@ -7,10 +7,13 @@
 
 #include "usermanager.h"
 
+/**
+ * @brief 网络管理器的类声明
+ */
 class NetworkManager;
 
 /**
- * @brief 好友信息结构体
+ * @brief 用于存储好友信息的结构体
  */
 struct FriendInfo{
     QString username;  // 好友用户名
@@ -18,7 +21,7 @@ struct FriendInfo{
 };
 
 /**
- * @brief 好友管理器类，负责好友的添加、删除、查询和列表管理
+ * @brief 好友管理器类，用于好友的添加、删除、查询和列表管理
  */
 class FriendManager : public QObject{
     Q_OBJECT

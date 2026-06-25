@@ -41,17 +41,17 @@ bool MessageManager::SendMessage(const QString& receiver, const QString& content
     if(!ValidateMessageContent(content)){
         return false;
     }
-    QJsonObject dataObj;
-    dataObj["receiver"] = receiver;
-    dataObj["content"] = content;
-    QJsonObject requestObj;
-    requestObj["type"] = "SEND_MSG";
-    requestObj["data"] = dataObj;
-    QJsonDocument doc(requestObj);
-    QByteArray requestData = doc.toJson(QJsonDocument::Compact);
+    QJsonObject dataObj;  // 发送消息请求数据对象
+    dataObj["receiver"] = receiver;  // 发送消息请求数据（接收者）
+    dataObj["content"] = content;  // 发送消息请求数据（内容）
+    QJsonObject requestObj;  // 发送消息请求对象
+    requestObj["type"] = "SEND_MSG";  // 发送消息请求类型
+    requestObj["data"] = dataObj;  // 发送消息请求数据
+    QJsonDocument doc(requestObj);  // 将请求对象转换为JSON文档
+    QByteArray requestData = doc.toJson(QJsonDocument::Compact);  // 将JSON文档转换为字节数组
     bool sendResult = networkManager->SendData(requestData);
     if(!sendResult){
-        emit MessageSendFailed("发送失败");
+        emit MessageSendFailed("发送失败");  // 手动触发自定义消息发送失败信号，通知UI层
         return false;
     }
     qDebug() << "[MessageManager::SendMessage]发送消息请求成功";
@@ -64,16 +64,16 @@ bool MessageManager::SendMessage(const QString& receiver, const QString& content
  * @return 是否成功发送请求
  */
 bool MessageManager::GetHistoryMessages(const QString& friendUsername){
-    QJsonObject dataObj;
-    dataObj["friend_username"] = friendUsername;
-    QJsonObject requestObj;
-    requestObj["type"] = "HISTORY_MSG";
-    requestObj["data"] = dataObj;
-    QJsonDocument doc(requestObj);
-    QByteArray requestData = doc.toJson(QJsonDocument::Compact);
+    QJsonObject dataObj;  // 获取历史消息请求数据对象
+    dataObj["friend_username"] = friendUsername;  // 获取历史消息请求数据（好友用户名）
+    QJsonObject requestObj;  // 获取历史消息请求对象
+    requestObj["type"] = "HISTORY_MSG";  // 获取历史消息请求类型
+    requestObj["data"] = dataObj;  // 获取历史消息请求数据
+    QJsonDocument doc(requestObj);  // 将请求对象转换为JSON文档
+    QByteArray requestData = doc.toJson(QJsonDocument::Compact);  // 将JSON文档转换为字节数组
     bool sendResult = networkManager->SendData(requestData);
     if(!sendResult){
-        emit HistoryFailed("获取历史消息失败");
+        emit HistoryFailed("获取历史消息失败");  // 手动触发自定义历史消息失败信号，通知UI层
         return false;
     }
     qDebug() << "[MessageManager::GetHistoryMessages]获取历史消息请求成功";
@@ -112,9 +112,9 @@ void MessageManager::SetCurrentUsername(const QString& username){
  * @return 排序后的消息列表
  */
 QList<Message> MessageManager::SortMessagesByTime(const QList<Message>& list){
-    QList<Message> sorted = list;
+    QList<Message> sorted = list;  // 复制消息列表，避免修改原列表
     std::sort(sorted.begin(), sorted.end(), [](const Message& a, const Message& b){
-        return a.timestamp < b.timestamp;
+        return a.timestamp < b.timestamp;  // 按时间戳升序排列
     });
     return sorted;
 }
@@ -124,14 +124,14 @@ QList<Message> MessageManager::SortMessagesByTime(const QList<Message>& list){
  * @param data 接收到的数据
  */
 void MessageManager::OnDataReceived(const QByteArray& data){
-    QJsonParseError parseError;
-    QJsonDocument doc = QJsonDocument::fromJson(data, &parseError);
-    if(parseError.error != QJsonParseError::NoError){
+    QJsonParseError parseError;  // JSON解析错误对象
+    QJsonDocument doc = QJsonDocument::fromJson(data, &parseError);  // 将字节数组转换为JSON文档
+    if(parseError.error != QJsonParseError::NoError){  // 如果解析失败
         qDebug() << "[MessageManager::OnDataReceived]JSON解析失败";
         return;
     }
-    QJsonObject response = doc.object();
-    QString type = response["type"].toString();
+    QJsonObject response = doc.object();  // 从JSON文档中提取响应对象
+    QString type = response["type"].toString();  // 从响应对象中提取类型字段
     qDebug() << "[MessageManager::OnDataReceived]接收到响应数据，类型:" << type;
     if(type == "SEND_MSG_RESPONSE"){
         HandleSendMessageResponse(response);
@@ -152,22 +152,22 @@ void MessageManager::OnDataReceived(const QByteArray& data){
  * @param response 响应JSON对象
  */
 void MessageManager::HandleSendMessageResponse(const QJsonObject& response){
-    int code = response["code"].toInt();
+    int code = response["code"].toInt();  // 从响应对象中提取状态码字段
     switch(code){
         case 0:{
-            QJsonObject data = response["data"].toObject();
+            QJsonObject data = response["data"].toObject();  // 从响应对象中提取数据字段
             Message msg;
-            msg.sender = data["sender"].toString();
-            msg.receiver = data["receiver"].toString();
-            msg.content = data["content"].toString();
-            msg.timestamp = data["timestamp"].toString();
+            msg.sender = data["sender"].toString();  // 从数据对象中提取发送者
+            msg.receiver = data["receiver"].toString();  // 从数据对象中提取接收者
+            msg.content = data["content"].toString();  // 从数据对象中提取内容
+            msg.timestamp = data["timestamp"].toString();  // 从数据对象中提取时间戳
             msg.isRead = true;
             AddMessageToCache(msg);
-            emit MessageSendSuccess(msg);
+            emit MessageSendSuccess(msg);  // 手动触发自定义消息发送成功信号，通知UI层
             break;
         }
         case 1002:
-            emit MessageSendFailed("服务器接收请求失败");
+            emit MessageSendFailed("服务器接收请求失败");  // 手动触发自定义消息发送失败信号，通知UI层
             break;
         case 4001:
             emit MessageSendFailed("接收方已离线，消息已存储");
@@ -197,30 +197,30 @@ void MessageManager::HandleForwardMessage(const QJsonObject& msg){
  * @param response 响应JSON对象
  */
 void MessageManager::HandleHistoryResponse(const QJsonObject& response){
-    int code = response["code"].toInt();
+    int code = response["code"].toInt();  // 从响应对象中提取状态码字段
     switch(code){
         case 0:{
-            QJsonObject data = response["data"].toObject();
-            QString friendUsername = data["friend_username"].toString();
-            QJsonArray messages = data["messages"].toArray();
+            QJsonObject data = response["data"].toObject();  // 从响应对象中提取数据字段
+            QString friendUsername = data["friend_username"].toString();  // 从数据对象中提取好友用户名
+            QJsonArray messages = data["messages"].toArray();  // 从数据对象中提取消息数组
             QList<Message> historyList;
             for(const QJsonValue& val : messages){
-                QJsonObject msgObj = val.toObject();
+                QJsonObject msgObj = val.toObject();  // 将JSON值转换为JSON对象
                 Message msg;
-                msg.sender = msgObj["sender"].toString();
-                msg.receiver = msgObj["receiver"].toString();
-                msg.content = msgObj["content"].toString();
-                msg.timestamp = msgObj["timestamp"].toString();
+                msg.sender = msgObj["sender"].toString();  // 从消息对象中提取发送者
+                msg.receiver = msgObj["receiver"].toString();  // 从消息对象中提取接收者
+                msg.content = msgObj["content"].toString();  // 从消息对象中提取内容
+                msg.timestamp = msgObj["timestamp"].toString();  // 从消息对象中提取时间戳
                 msg.isRead = true;
                 historyList.append(msg);
             }
             historyList = SortMessagesByTime(historyList);
             messageCache[friendUsername] = historyList;
-            emit HistoryReceived(friendUsername, historyList);
+            emit HistoryReceived(friendUsername, historyList);  // 手动触发自定义历史消息接收信号，通知UI层
             break;
         }
         case 1002:
-            emit HistoryFailed("服务器接收请求失败");
+            emit HistoryFailed("服务器接收请求失败");  // 手动触发自定义历史消息失败信号，通知UI层
             break;
         case 4003:
             emit HistoryReceived(response["data"].toObject()["friend_username"].toString(), QList<Message>());
@@ -239,11 +239,11 @@ void MessageManager::HandleHistoryResponse(const QJsonObject& response){
  * @param notify 通知JSON对象
  */
 void MessageManager::HandleMessageNotify(const QJsonObject& notify){
-    QJsonObject data = notify["data"].toObject();
-    QString sender = data["sender"].toString();
-    int count = data["count"].toInt();
+    QJsonObject data = notify["data"].toObject();  // 从通知对象中提取数据字段
+    QString sender = data["sender"].toString();  // 从数据对象中提取发送者
+    int count = data["count"].toInt();  // 从数据对象中提取未读数量
     qDebug() << "[MessageManager::HandleMessageNotify]收到消息通知，发送者:" << sender << "，未读数量:" << count;
-    emit MessageNotify(sender, count);
+    emit MessageNotify(sender, count);  // 手动触发自定义消息通知信号，通知UI层
 }
 
 /**
@@ -252,11 +252,11 @@ void MessageManager::HandleMessageNotify(const QJsonObject& notify){
  * @return 内容是否合法
  */
 bool MessageManager::ValidateMessageContent(const QString& content){
-    if(content.trimmed().isEmpty()){
-        emit MessageSendFailed("消息内容不能为空");
+    if(content.trimmed().isEmpty()){  // 如果消息内容为空（去除首尾空格后为空）
+        emit MessageSendFailed("消息内容不能为空");  // 手动触发自定义消息发送失败信号，通知UI层
         return false;
     }
-    if(content.toUtf8().size() > 64 * 1024){
+    if(content.toUtf8().size() > 64 * 1024){  // 如果消息内容长度超过64KB
         emit MessageSendFailed("消息过长");
         return false;
     }
@@ -268,7 +268,7 @@ bool MessageManager::ValidateMessageContent(const QString& content){
  * @param message 消息对象引用
  */
 void MessageManager::MarkAsStrangerMessage(Message& message){
-    QList<FriendInfo> friendList = friendManager->GetCachedFriendList();
+    QList<FriendInfo> friendList = friendManager->GetCachedFriendList();  // 获取缓存中的好友列表
     bool isFriend = false;
     for(const FriendInfo& info : friendList){
         if(info.username == message.sender){
@@ -285,13 +285,13 @@ void MessageManager::MarkAsStrangerMessage(Message& message){
  * @param summary 消息摘要
  */
 void MessageManager::ShowSystemTrayNotification(const QString& sender, const QString& summary){
-    QSystemTrayIcon* trayIcon = new QSystemTrayIcon();
-    trayIcon->setIcon(QIcon(":/icons/app.png"));
-    trayIcon->show();
-    QString title = QString("新消息来自 %1").arg(sender);
-    QString content = summary.length() > 30 ? summary.left(30) + "..." : summary;
-    trayIcon->showMessage(title, content, QSystemTrayIcon::Information, 5000);
-    QTimer::singleShot(6000, trayIcon, &QObject::deleteLater);
+    QSystemTrayIcon* trayIcon = new QSystemTrayIcon();  // 创建系统托盘图标对象
+    trayIcon->setIcon(QIcon(":/icons/app.png"));  // 设置系统托盘图标
+    trayIcon->show();  // 显示系统托盘图标
+    QString title = QString("新消息来自 %1").arg(sender);  // 托盘通知标题
+    QString content = summary.length() > 30 ? summary.left(30) + "..." : summary;  // 托盘通知内容（限制30字）
+    trayIcon->showMessage(title, content, QSystemTrayIcon::Information, 5000);  // 显示系统托盘消息，持续5秒
+    QTimer::singleShot(6000, trayIcon, &QObject::deleteLater);  // 6秒后自动释放系统托盘图标
 }
 
 /**
@@ -299,16 +299,16 @@ void MessageManager::ShowSystemTrayNotification(const QString& sender, const QSt
  * @param message 接收到的消息JSON对象
  */
 void MessageManager::HandleIncomingMessage(const QJsonObject& message){
-    QJsonObject data = message["data"].toObject();
+    QJsonObject data = message["data"].toObject();  // 从消息对象中提取数据字段
     Message msg;
-    msg.sender = data["sender"].toString();
-    msg.receiver = data["receiver"].toString();
-    msg.content = data["content"].toString();
-    msg.timestamp = data["timestamp"].toString();
+    msg.sender = data["sender"].toString();  // 从数据对象中提取发送者
+    msg.receiver = data["receiver"].toString();  // 从数据对象中提取接收者
+    msg.content = data["content"].toString();  // 从数据对象中提取内容
+    msg.timestamp = data["timestamp"].toString();  // 从数据对象中提取时间戳
     msg.isRead = false;
     msg.isStranger = false;
     MarkAsStrangerMessage(msg);
     AddMessageToCache(msg);
-    emit MessageReceived(msg);
+    emit MessageReceived(msg);  // 手动触发自定义消息接收信号，通知UI层
     qDebug() << "[MessageManager::HandleIncomingMessage]收到来自" << msg.sender << "的消息，陌生人:" << msg.isStranger;
 }

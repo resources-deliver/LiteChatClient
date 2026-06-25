@@ -4,14 +4,18 @@
 #include <QDialog>
 #include <QTimer>
 
-namespace Ui{
-class ConnectDialog;
-}
+/**
+ * @brief 用于连接对话框（UI界面）的命名空间
+ */
+namespace Ui{class ConnectDialog;}
 
+/**
+ * @brief 网络管理器的类声明
+ */
 class NetworkManager;
 
 /**
- * @brief 连接服务器对话框
+ * @brief 连接服务器对话框，用于连接服务器端
  */
 class ConnectDialog : public QDialog{
     Q_OBJECT

@@ -20,7 +20,7 @@ ConnectDialog::ConnectDialog(NetworkManager* networkManager, QWidget *parent)
     , timeoutTimer(new QTimer(this))
 {
     ui->setupUi(this);  // 初始化连接对话框（UI界面）
-    SetupUI();  // 设置连接对话框（UI界面）样式
+    SetupUI();
 
     // 连接按钮被点击后，自动触发自带的信号，自动调用槽函数
     connect(ui->connectButton, &QPushButton::clicked, this, &ConnectDialog::OnConnectClicked);
@@ -38,7 +38,7 @@ ConnectDialog::ConnectDialog(NetworkManager* networkManager, QWidget *parent)
  * @brief ConnectDialog析构函数，用于释放动态分配的资源
  */
 ConnectDialog::~ConnectDialog(){
-    delete ui;  // 释放连接对话框（UI界面）的指针
+    delete ui;
 }
 
 /**
@@ -107,8 +107,11 @@ void ConnectDialog::SetupUI(){
  * @return 是否合法
  */
 bool ConnectDialog::ValidateIP(const QString& ip){
-    QRegularExpression regex("^((25[0-5]|2[0-4]\\d|[01]?\\d\\d?)\\.){3}(25[0-5]|2[0-4]\\d|[01]?\\d\\d?)$");
-    return regex.match(ip).hasMatch();
+    QRegularExpression regex(
+        "^((25[0-5]|2[0-4]\\d|[01]?\\d\\d?)\\.){3}(25[0-5]|2[0-4]\\d|[01]?\\d\\d?)$"
+    );  // 编译正则表达式
+    bool result = regex.match(ip).hasMatch();  // 匹配IP地址字符串
+    return result;
 }
 
 /**
@@ -123,24 +126,24 @@ void ConnectDialog::ShowBusyMessage(){
  * @param ip 服务器IP地址
  */
 void ConnectDialog::PerformConnection(const QString& ip){
-    if(isProcessing){  // 如果正在处理连接请求
+    if(isProcessing){
         qDebug() << "[ConnectDialog::PerformConnection]已经正在处理连接请求";
-        ShowBusyMessage();  // 信息弹窗
+        ShowBusyMessage();
         return;
     }
-    if(!ValidateIP(ip)){  // 如果IP地址格式不符合要求
+    if(!ValidateIP(ip)){
         qDebug() << "[ConnectDialog::PerformConnection]IP地址格式不符合要求";
         QMessageBox::warning(this, "错误", "IP地址不符合格式");  // 错误弹窗
         return;
     }
-    isProcessing = true;  // 设置连接请求状态
+    isProcessing = true;
     ui->connectButton->setEnabled(false);  // 禁用连接按钮
     ui->skipButton->setEnabled(false);  // 禁用跳过按钮
     timeoutTimer->start(5000);  // 启动5秒时间定时器
-    bool result = networkManager->ConnectToServer(ip, 8886);  // 连接到服务器
-    if(!result){  // 如果连接失败
+    bool result = networkManager->ConnectToServer(ip, 8886);
+    if(!result){
         timeoutTimer->stop();  // 停止时间定时器
-        isProcessing = false;  // 设置连接请求状态
+        isProcessing = false;
         ui->connectButton->setEnabled(true);  // 启用连接按钮
         ui->skipButton->setEnabled(true);  // 启用跳过按钮
         qDebug() << "[ConnectDialog::PerformConnection]连接服务器请求失败";
@@ -150,7 +153,7 @@ void ConnectDialog::PerformConnection(const QString& ip){
 }
 
 /**
- * @brief 连接按钮被点击后，自动触发自带的信号，自动调用槽函数
+ * @brief 槽函数，用于响应连接按钮被点击后自动触发自带的信号
  */
 void ConnectDialog::OnConnectClicked(){
     QString ip = ui->ipLineEdit->text().trimmed();  // 获取IP地址输入框中的文本并去掉首尾空格
@@ -160,51 +163,50 @@ void ConnectDialog::OnConnectClicked(){
         return;
     }
     qDebug() << "[ConnectDialog::OnConnectClicked]客户端发送连接请求到服务器";
-    PerformConnection(ip);  // 执行连接请求操作
+    PerformConnection(ip);
 }
 
 /**
- * @brief 跳过按钮被点击后，自动触发自带的信号，自动调用槽函数
+ * @brief 槽函数，用于响应跳过按钮被点击后自动触发自带的信号
  */
 void ConnectDialog::OnSkipClicked(){
     qDebug() << "[ConnectDialog::OnSkipClicked]客户端发送连接请求到服务器";
-    PerformConnection(DEFAULT_IP);  // 执行连接请求操作
+    PerformConnection(DEFAULT_IP);
 }
 
 /**
- * @brief 时间定时器超时后，自动触发自带的信号，自动调用槽函数
+ * @brief 槽函数，用于响应时间定时器超时后自动触发自带的信号
  */
 void ConnectDialog::OnConnectionTimeout(){
     timeoutTimer->stop();  // 停止时间定时器
-    isProcessing = false;  // 设置连接请求状态
+    isProcessing = false;
     ui->connectButton->setEnabled(true);  // 启用连接按钮
     ui->skipButton->setEnabled(true);  // 启用跳过按钮
     QMessageBox::warning(this, "错误", "请求超时");  // 错误弹窗
-    qDebug() << "[ConnectDialog::OnConnectionTimeout]时间定时器超时后自动调用槽函数";  // Debug输出
+    qDebug() << "[ConnectDialog::OnConnectionTimeout]时间定时器超时后自动调用槽函数";
 }
 
 /**
- * @brief 连接成功后，手动触发自定义信号，自动调用槽函数
+ * @brief 槽函数，用于响应连接成功后手动触发的自定义信号
  */
 void ConnectDialog::OnConnected(){
     timeoutTimer->stop();  // 停止时间定时器
-    isProcessing = false;  // 设置连接请求状态
+    isProcessing = false;
     qDebug() << "[ConnectDialog::OnConnected]客户端接收连接成功响应";
     accept();  // 接受连接成功信号
 }
 
 /**
- * @brief 连接失败后，手动触发自定义信号，自动调用槽函数
+ * @brief 槽函数，用于响应连接失败后手动触发的自定义信号
  * @param errorMsg 错误信息
  */
 void ConnectDialog::OnError(const QString& errorMsg){
     timeoutTimer->stop();  // 停止时间定时器
-    isProcessing = false;  // 设置连接请求状态
+    isProcessing = false;
     ui->connectButton->setEnabled(true);  // 启用连接按钮
     ui->skipButton->setEnabled(true);  // 启用跳过按钮
-
     if(errorMsg == "服务器下机了"){
-        QMessageBox::warning(this, "错误", "服务器下机了");
+        QMessageBox::warning(this, "错误", "服务器下机了");  // 错误弹窗
     }
     else if(errorMsg.contains("接收请求失败")){
         QMessageBox::warning(this, "错误", "服务器接收请求失败");

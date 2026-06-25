@@ -4,14 +4,18 @@
 #include <QDialog>
 #include <QTimer>
 
-namespace Ui{
-class RegisterDialog;
-}
+/**
+ * @brief 用于注册对话框（UI界面）的命名空间    
+ */
+namespace Ui{class RegisterDialog;}
 
+/**
+ * @brief 用户管理器的类声明
+ */
 class UserManager;
 
 /**
- * @brief 注册对话框
+ * @brief 注册对话框，用于用户注册
  */
 class RegisterDialog : public QDialog{
     Q_OBJECT

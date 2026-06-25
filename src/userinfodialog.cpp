@@ -19,7 +19,7 @@ UserInfoDialog::UserInfoDialog(UserManager* userManager, QWidget *parent)
     , timeoutTimer(new QTimer(this))
 {
     ui->setupUi(this);  // 初始化个人信息对话框（UI界面）
-    SetupUI();  // 设置个人信息对话框（UI界面）样式
+    SetupUI();
 
     // 保存按钮被点击后，自动触发自带的信号，自动调用槽函数
     connect(ui->saveButton, &QPushButton::clicked, this, &UserInfoDialog::OnSaveClicked);
@@ -39,7 +39,7 @@ UserInfoDialog::UserInfoDialog(UserManager* userManager, QWidget *parent)
  * @brief UserInfoDialog析构函数，用于释放动态分配的资源
  */
 UserInfoDialog::~UserInfoDialog(){
-    delete ui;  // 释放个人信息对话框（UI界面）的指针
+    delete ui;
 }
 
 /**
@@ -147,30 +147,26 @@ void UserInfoDialog::ShowBusyMessage(){
 void UserInfoDialog::ShowVerifyPasswordDialog(){
     bool ok;
     QString verifyPassword = QInputDialog::getText(
-        this, 
-        "身份验证",
-        "请输入当前密码以验证身份：", 
-        QLineEdit::Password, 
-        "", 
-        &ok
+        this, "身份验证", "请输入当前密码以验证身份：", 
+        QLineEdit::Password, "", &ok
     );  // 通过身份验证密码对话框获取用户输入的密码
     if(ok && !verifyPassword.isEmpty()){  // 如果用户点击了确定按钮并且密码不为空
-        isProcessing = true;  // 设置更新请求状态
+        isProcessing = true;
         ui->saveButton->setEnabled(false);  // 禁用保存修改按钮
         ui->cancelButton->setEnabled(false);  // 禁用取消按钮
         timeoutTimer->start(5000);  // 启动5秒时间定时器
-        userManager->UpdateUserInfo(pendingNewUsername, pendingNewPassword, verifyPassword);  // 更新
+        userManager->UpdateUserInfo(pendingNewUsername, pendingNewPassword, verifyPassword);
         qDebug() << "[UserInfoDialog::ShowVerifyPasswordDialog]更新用户信息请求成功";
     }
 }
 
 /**
- * @brief 保存按钮被点击后，自动触发自带的信号，自动调用槽函数
+ * @brief 槽函数，用于响应保存按钮被点击后自动触发自带的信号
  */
 void UserInfoDialog::OnSaveClicked(){
-    if(isProcessing){  // 如果正在处理更新请求
+    if(isProcessing){
         qDebug() << "[UserInfoDialog::OnSaveClicked]正在处理更新请求, 请稍后";
-        ShowBusyMessage();  // 信息弹窗
+        ShowBusyMessage();
         return;
     }
     pendingNewUsername = ui->newUsernameLineEdit->text().trimmed();  // 获取新用户名文本框中的文本并去掉首尾空格
@@ -183,20 +179,20 @@ void UserInfoDialog::OnSaveClicked(){
     }
     if(!pendingNewPassword.isEmpty() && pendingNewPassword != confirmPassword){  // 如果新密码不为空且新密码和确认新密码不一致
         qDebug() << "[UserInfoDialog::OnSaveClicked]两次输入的密码不一致";
-        QMessageBox::warning(this, "错误", "两次输入的密码不一致");  // 错误弹窗
+        QMessageBox::warning(this, "错误", "两次输入的密码不一致");
         return;
     }
     qDebug() << "[UserInfoDialog::OnSaveClicked]客户端发送更新用户信息请求到服务器";
-    ShowVerifyPasswordDialog();  // 显示身份验证密码对话框
+    ShowVerifyPasswordDialog();
 }
 
 /**
- * @brief 取消按钮被点击后，自动触发自带的信号，自动调用槽函数
+ * @brief 槽函数，用于响应取消按钮被点击后自动触发自带的信号
  */
 void UserInfoDialog::OnCancelClicked(){
-    if(isProcessing){  // 如果正在处理更新请求
+    if(isProcessing){
         qDebug() << "[UserInfoDialog::OnCancelClicked]正在处理更新请求, 请稍后";
-        ShowBusyMessage();  // 信息弹窗
+        ShowBusyMessage();
         return;
     }
     qDebug() << "[UserInfoDialog::OnCancelClicked]用户点击了取消按钮";
@@ -204,41 +200,41 @@ void UserInfoDialog::OnCancelClicked(){
 }
 
 /**
- * @brief 时间定时器超时后，自动触发自带的信号，自动调用槽函数
+ * @brief 槽函数，用于响应时间定时器超时后自动触发自带的信号
  */
 void UserInfoDialog::OnUpdateTimeout(){
     timeoutTimer->stop();  // 停止时间定时器
-    isProcessing = false;  // 设置更新请求状态
+    isProcessing = false;
     ui->saveButton->setEnabled(true);  // 启用保存修改按钮
     ui->cancelButton->setEnabled(true);  // 启用取消按钮
     QMessageBox::warning(this, "错误", "请求超时");  // 错误弹窗
-    qDebug() << "[UserInfoDialog::OnUpdateTimeout]时间定时器超时后自动调用槽函数";  // Debug输出
+    qDebug() << "[UserInfoDialog::OnUpdateTimeout]时间定时器超时后自动调用槽函数";
 }
 
 /**
- * @brief 更新成功后，手动触发自定义信号，自动调用槽函数
+ * @brief 槽函数，用于响应更新成功后手动触发的自定义信号
  */
 void UserInfoDialog::OnUpdateSuccess(){
     timeoutTimer->stop();  // 停止时间定时器
-    isProcessing = false;  // 设置更新请求状态
+    isProcessing = false;
     ui->saveButton->setEnabled(true);  // 启用保存修改按钮
     ui->cancelButton->setEnabled(true);  // 启用取消按钮
-    QMessageBox::information(this, "成功", "修改成功");  // 成功弹窗
+    QMessageBox::information(this, "成功", "修改成功");  // 信息弹窗
     qDebug() << "[UserInfoDialog::OnUpdateSuccess]客户端接收更新成功响应,更新成功";
     accept();  // 接受更新成功信号
 }
 
 /**
- * @brief 更新失败后，手动触发自定义信号，自动调用槽函数
+ * @brief 槽函数，用于响应更新失败后手动触发的自定义信号
  * @param errorMsg 错误信息
  */
 void UserInfoDialog::OnUpdateFailed(const QString& errorMsg){
     timeoutTimer->stop();  // 停止时间定时器
-    isProcessing = false;  // 设置更新请求状态
+    isProcessing = false;
     ui->saveButton->setEnabled(true);  // 启用保存修改按钮
     ui->cancelButton->setEnabled(true);  // 启用取消按钮
     if(errorMsg == "验证密码错误"){
-        QMessageBox::warning(this, "错误", "验证密码错误");
+        QMessageBox::warning(this, "错误", "验证密码错误");  // 错误弹窗
     }
     else if(errorMsg == "用户名已存在"){
         QMessageBox::warning(this, "错误", "用户名已存在");

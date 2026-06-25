@@ -8,10 +8,13 @@
 
 #include "usermanager.h"
 
+/**
+ * @brief 好友管理器的类声明
+ */
 class FriendManager;
 
 /**
- * @brief 搜索结果对话框，用于显示查询到的用户信息并提供添加好友功能
+ * @brief 搜索结果对话框，用于查询用户并提供添加好友
  */
 class SearchResultDialog : public QDialog{
     Q_OBJECT

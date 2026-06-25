@@ -4,14 +4,18 @@
 #include <QDialog>
 #include <QTimer>
 
-namespace Ui{
-class UserInfoDialog;
-}
+/**
+ * @brief 用于用户信息修改对话框（UI界面）的命名空间
+ */
+namespace Ui{class UserInfoDialog;}
 
+/**
+ * @brief 用户管理器的类声明
+ */
 class UserManager;
 
 /**
- * @brief 用户信息修改对话框
+ * @brief 用户信息修改对话框，用于修改用户信息
  */
 class UserInfoDialog : public QDialog{
     Q_OBJECT
@@ -33,9 +37,9 @@ private:
     void ShowVerifyPasswordDialog();
 
 private:
-    Ui::UserInfoDialog *ui;  // 用户信息对话对话框（UI界面）的指针
+    Ui::UserInfoDialog *ui;  // 用户信息修改对话框（UI界面）的指针
     UserManager* userManager;  // 用户管理器的指针
-    bool isProcessing;  // 用户信息更新请求状态
+    bool isProcessing;  // 修改请求状态
     QTimer* timeoutTimer;  // 时间定时器的指针
     QString pendingNewUsername;  // 待更新的用户名
     QString pendingNewPassword;  // 待更新的密码
