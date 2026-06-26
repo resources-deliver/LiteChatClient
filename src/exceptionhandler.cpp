@@ -18,7 +18,14 @@ ExceptionHandler::ExceptionHandler(NetworkManager* networkManager, QObject *pare
     , timeoutTimer(new QTimer(this))
 {
     // 网络连接断开后，手动触发自定义信号，自动调用槽函数
-    connect(networkManager, &NetworkManager::Disconnected, this, [this](){ HandleException("服务器下机了"); });
+    connect(networkManager, &NetworkManager::Disconnected, this, [this](){
+        if(this->networkManager->WasClosedByRemoteHost()){
+            ClientLogger::GetInstance().WriteLog(LogLevel::INFO, "ExceptionHandler", "服务器主动关闭连接，不进行重连");
+            emit ReconnectFailed("服务器已关闭");
+            return;
+        }
+        HandleException("服务器下机了");
+    });
     // 时间定时器超时后，自动触发自带的信号，自动调用槽函数
     connect(timeoutTimer, &QTimer::timeout, this, &ExceptionHandler::OnReconnectTimerTimeout);
 }

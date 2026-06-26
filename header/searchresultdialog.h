@@ -48,7 +48,6 @@ private:
     QPushButton* addFriendButton;  // 添加好友按钮的指针
     QPushButton* closeButton;  // 关闭按钮的指针
     bool isProcessing;  // UI界面处理状态
-    bool ignoreLateResponse;  // 忽略延迟响应标志
     QTimer* timeoutTimer;  // 时间定时器的指针
     QString queriedUsername;  // 查询到的用户名
 };

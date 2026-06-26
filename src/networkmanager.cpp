@@ -15,6 +15,7 @@ NetworkManager::NetworkManager(QObject *parent)
     , serverPort(8886)
     , isConnected(false)
     , timeout(5)
+    , wasClosedByRemoteHost(false)
 {
     // 连接成功后，自动触发自带的信号，自动调用槽函数
     connect(socket, &QTcpSocket::connected, this, &NetworkManager::OnConnected);
@@ -127,10 +128,19 @@ int NetworkManager::GetServerPort() const{
 }
 
 /**
+ * @brief 获取是否由远程主机关闭连接
+ * @return 是否由远程主机关闭连接
+ */
+bool NetworkManager::WasClosedByRemoteHost() const{
+    return wasClosedByRemoteHost;
+}
+
+/**
  * @brief 槽函数，用于响应连接成功后自动触发自带的信号
  */
 void NetworkManager::OnConnected(){
     isConnected = true;
+    wasClosedByRemoteHost = false;
     emit Connected();  // 手动触发自定义连接成功信号，通知UI层
 }
 
@@ -139,6 +149,9 @@ void NetworkManager::OnConnected(){
  */
 void NetworkManager::OnDisconnected(){
     isConnected = false;
+    if(socket->error() == QAbstractSocket::RemoteHostClosedError){
+        wasClosedByRemoteHost = true;
+    }
     receiveBuffer.clear();  // 清空接收缓冲区
     emit Disconnected();  // 手动触发自定义断开连接信号，通知UI层
 }
@@ -179,6 +192,7 @@ void NetworkManager::OnError(QAbstractSocket::SocketError socketError){
             break;
         case QAbstractSocket::RemoteHostClosedError:
             errorMsg = "服务器下机了";
+            wasClosedByRemoteHost = true;
             break;
         case QAbstractSocket::HostNotFoundError:
             errorMsg = "无法找到服务器";

@@ -138,7 +138,7 @@ void ConnectDialog::PerformConnection(const QString& ip){
     timeoutTimer->start(5000);  // 启动5秒时间定时器
     bool result = networkManager->ConnectToServer(ip, 8886);
     if(result){
-        ClientLogger::GetInstance().WriteLog(LogLevel::ERROR, "ConnectDialog", "发送连接请求成功");
+        ClientLogger::GetInstance().WriteLog(LogLevel::INFO, "ConnectDialog", "发送连接请求成功");
     }
     else{
         ClientLogger::GetInstance().WriteLog(LogLevel::ERROR, "ConnectDialog", "发送连接请求失败");

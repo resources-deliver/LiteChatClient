@@ -282,7 +282,7 @@ void UserManager::HandleRegisterResponse(const QJsonObject& response){
             emit RegisterFailed("服务器接收请求失败");  // 手动触发自定义注册失败信号，通知UI层
             break;
         case 2001:
-            emit RegisterFailed("用户名不符合格式");
+            emit RegisterFailed("用户名不符合格式/密码不符合格式");
             break;
         case 2002:
             emit RegisterFailed("用户名已存在");
@@ -308,6 +308,9 @@ void UserManager::HandleLoginResponse(const QJsonObject& response){
             break;
         case 1002:
             emit LoginFailed("服务器接收请求失败");  // 手动触发自定义登录失败信号，通知UI层
+            break;
+        case 2001:
+            emit LoginFailed("用户名不符合格式/密码不符合格式");
             break;
         case 2003:
             emit LoginFailed("该用户不存在");

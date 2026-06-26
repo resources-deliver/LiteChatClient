@@ -23,7 +23,6 @@ SearchResultDialog::SearchResultDialog(FriendManager* friendManager, QWidget *pa
     , addFriendButton(nullptr)
     , closeButton(nullptr)
     , isProcessing(false)
-    , ignoreLateResponse(false)
     , timeoutTimer(new QTimer(this))
 {
     SetupUI();
@@ -174,10 +173,9 @@ void SearchResultDialog::OnAddFriendClicked(){
         return;
     }
     isProcessing = true;
-    ignoreLateResponse = false;
     addFriendButton->setEnabled(false);  // 禁用添加好友按钮
     closeButton->setEnabled(false);  // 禁用关闭按钮
-    timeoutTimer->start(5000);  // 启动5秒时间定时器
+    timeoutTimer->start(15000);  // 启动15秒时间定时器
     bool addResult = friendManager->AddFriend(queriedUsername);
     if(addResult){
         ClientLogger::GetInstance().WriteLog(LogLevel::INFO, "SearchResultDialog", "发送添加请求成功");
@@ -218,7 +216,6 @@ void SearchResultDialog::closeEvent(QCloseEvent* event){
 void SearchResultDialog::OnAddFriendTimeout(){
     timeoutTimer->stop();  // 停止时间定时器
     isProcessing = false;
-    ignoreLateResponse = true;
     addFriendButton->setEnabled(true);  // 启用添加好友按钮
     closeButton->setEnabled(true);  // 启用关闭按钮
     QMessageBox::warning(this, "错误", "请求超时");  // 错误弹窗
@@ -230,9 +227,6 @@ void SearchResultDialog::OnAddFriendTimeout(){
  * @param username 添加成功的用户名
  */
 void SearchResultDialog::OnFriendAdded(const QString& username){
-    if(ignoreLateResponse){
-        return;
-    }
     timeoutTimer->stop();  // 停止时间定时器
     isProcessing = false;
     addFriendButton->setEnabled(true);  // 启用添加好友按钮
@@ -247,9 +241,6 @@ void SearchResultDialog::OnFriendAdded(const QString& username){
  * @param errorMsg 错误信息
  */
 void SearchResultDialog::OnFriendAddFailed(const QString& errorMsg){
-    if(ignoreLateResponse){
-        return;
-    }
     timeoutTimer->stop();  // 停止时间定时器
     isProcessing = false;
     addFriendButton->setEnabled(true);  // 启用添加好友按钮

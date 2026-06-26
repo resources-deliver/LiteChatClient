@@ -10,7 +10,6 @@
 
 #include <QApplication>
 #include <QDir>
-#include <QStandardPaths>
 
 #ifdef Q_OS_WIN
 #include <windows.h>
@@ -29,7 +28,7 @@ int main(int argc, char *argv[]){
     QApplication a(argc, argv);
     qInstallMessageHandler(customMessageHandler);
 
-    QString logDir = QStandardPaths::writableLocation(QStandardPaths::AppDataLocation) + "/logs";
+    QString logDir = QCoreApplication::applicationDirPath() + "/logs";
     ClientLogger::GetInstance().InitLogger(logDir);
     ClientLogger::GetInstance().WriteLog(LogLevel::INFO, "Main", "LiteChat客户端启动");
 

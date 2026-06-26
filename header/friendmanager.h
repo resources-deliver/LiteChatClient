@@ -61,6 +61,7 @@ private:
 private:
     NetworkManager* networkManager;  // 网络管理器的指针
     QList<FriendInfo> friendList;  // 好友列表缓存
+    bool isFetchingFriendList;  // 是否正在获取好友列表
 };
 
 #endif // FRIENDMANAGER_H

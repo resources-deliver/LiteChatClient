@@ -30,61 +30,40 @@
  * @param messageManager 消息管理器指针
  * @param parent 父窗口
  */
-MainWindow::MainWindow(NetworkManager* networkManager, UserManager* userManager, FriendManager* friendManager, MessageManager* messageManager, QWidget *parent)
-    : QMainWindow(parent)
-    , ui(new Ui::MainWindow)
-    , networkManager(networkManager)
-    , userManager(userManager)
-    , friendManager(friendManager)
-    , messageManager(messageManager)
-    , avatarLabel(nullptr)
-    , usernameLabel(nullptr)
-    , statusIndicator(nullptr)
-    , searchLineEdit(nullptr)
-    , friendListWidget(nullptr)
-    , deleteFriendButton(nullptr)
-    , refreshListButton(nullptr)
-    , welcomeLabel(nullptr)
-    , contentStack(nullptr)
-    , chatPage(nullptr)
-    , chatFriendLabel(nullptr)
-    , messageListWidget(nullptr)
-    , messageInput(nullptr)
-    , sendButton(nullptr)
-    , trayIcon(nullptr)
-    , notificationBubble(nullptr)
-    , busyToast(nullptr)
-    , isDeletingFriend(false)
-    , isViewingFriendInfo(false)
-    , isSendingMessage(false)
+MainWindow::MainWindow(
+    NetworkManager* networkManager, UserManager* userManager, 
+    FriendManager* friendManager, MessageManager* messageManager, QWidget *parent
+)
+    : QMainWindow(parent), ui(new Ui::MainWindow), networkManager(networkManager)
+    , userManager(userManager), friendManager(friendManager), messageManager(messageManager)
+    , avatarLabel(nullptr), usernameLabel(nullptr), statusIndicator(nullptr)
+    , searchLineEdit(nullptr), friendListWidget(nullptr), deleteFriendButton(nullptr)
+    , refreshListButton(nullptr), welcomeLabel(nullptr), contentStack(nullptr)
+    , chatPage(nullptr), chatFriendLabel(nullptr), messageListWidget(nullptr)
+    , messageInput(nullptr), sendButton(nullptr), trayIcon(nullptr)
+    , notificationBubble(nullptr), busyToast(nullptr), isDeletingFriend(false)
+    , isViewingFriendInfo(false), isSendingMessage(false)
 {
     ui->setupUi(this);  // 初始化主窗口（UI界面）
 
-    setWindowTitle("LiteChat - " + userManager->GetCurrentUsername());  // 设置窗口标题
+    setWindowTitle("LiteChat");  // 设置窗口标题
     ui->statusbar->showMessage("已登录: " + userManager->GetCurrentUsername());  // 状态栏显示登录用户名
     resize(800, 600);  // 设置窗口大小
-
     QWidget* centralWidget = new QWidget(this);  // 创建中央窗口部件
     QVBoxLayout* mainLayout = new QVBoxLayout(centralWidget);  // 创建垂直布局
     mainLayout->setContentsMargins(0, 0, 0, 0);  // 设置布局边距为0
     mainLayout->setSpacing(0);  // 设置布局间距为0
-
     SetupTopBar(mainLayout);  // 设置顶部栏
-
     QHBoxLayout* centralLayout = new QHBoxLayout();  // 创建中央区域水平布局
     centralLayout->setContentsMargins(0, 0, 0, 0);  // 设置布局边距为0
     centralLayout->setSpacing(0);  // 设置布局间距为0
-
     SetupLeftPanel(centralLayout);  // 设置左侧面板
     SetupContentArea(centralLayout);  // 设置内容区域
-
     mainLayout->addLayout(centralLayout);  // 添加中央区域布局
-
     SetupBottomBar(mainLayout);  // 设置底部操作栏
-
     setCentralWidget(centralWidget);  // 设置中央窗口部件
 
-    // 连接断开后，自动触发自带的信号，自动调用槽函数
+    // 连接断开后，手动触发自定义信号，自动调用槽函数
     connect(networkManager, &NetworkManager::Disconnected, this, &MainWindow::OnDisconnected);
     // 状态改变后，手动触发自定义信号，自动调用槽函数
     connect(userManager, &UserManager::StatusChanged, this, &MainWindow::OnStatusChanged);
@@ -118,13 +97,23 @@ MainWindow::MainWindow(NetworkManager* networkManager, UserManager* userManager,
     connect(messageManager, &MessageManager::HistoryFailed, this, &MainWindow::OnHistoryFailed);
     // 消息通知后，手动触发自定义信号，自动调用槽函数
     connect(messageManager, &MessageManager::MessageNotify, this, &MainWindow::OnMessageNotify);
-
+    // 回车键被按下后，自动触发自带的信号，自动调用槽函数
+    connect(searchLineEdit, &QLineEdit::returnPressed, this, &MainWindow::OnSearchReturnPressed);
+    // 右键菜单请求后，自动触发自带的信号，自动调用槽函数
+    connect(friendListWidget, &QListWidget::customContextMenuRequested, this, &MainWindow::OnFriendListContextMenu);
+    // 发送按钮被点击后，自动触发自带的信号，自动调用槽函数
+    connect(sendButton, &QPushButton::clicked, this, &MainWindow::OnSendMessageClicked);
+    // 删除好友按钮被点击后，自动触发自带的信号，自动调用槽函数
+    connect(deleteFriendButton, &QPushButton::clicked, this, &MainWindow::OnDeleteFriendClicked);
+    // 刷新列表按钮被点击后，自动触发自带的信号，自动调用槽函数
+    connect(refreshListButton, &QPushButton::clicked, this, &MainWindow::OnRefreshListClicked);
+    
     exceptionHandler = new ExceptionHandler(networkManager, this);  // 创建异常处理器
     // 重连失败后，手动触发自定义信号，自动调用槽函数
     connect(exceptionHandler, &ExceptionHandler::ReconnectFailed, this, &MainWindow::OnReconnectFailed);
 
-    userManager->QueryUserStatus();  // 查询用户状态
-    friendManager->GetFriendList();  // 获取好友列表
+    UserStatus status = userManager->QueryUserStatus();
+    bool getFriendListResult = friendManager->GetFriendList();
 
     // 初始化系统托盘图标
     trayIcon = new QSystemTrayIcon(this);
@@ -138,7 +127,7 @@ MainWindow::MainWindow(NetworkManager* networkManager, UserManager* userManager,
  */
 MainWindow::~MainWindow(){
     ClientLogger::GetInstance().WriteLog(LogLevel::INFO, "MainWindow", "主窗口关闭");
-    delete ui;  // 释放主窗口（UI界面）的指针
+    delete ui;
 }
 
 /**
@@ -155,7 +144,7 @@ void MainWindow::SetupTopBar(QVBoxLayout* mainLayout){
 
     avatarLabel = new QLabel();  // 创建头像标签
     avatarLabel->setFixedSize(36, 36);  // 设置头像标签固定大小36×36px
-    QString username = userManager->GetCurrentUsername();  // 获取当前用户名
+    QString username = userManager->GetCurrentUsername();
     QString avatarText = username.isEmpty() ? "U" : username.left(1).toUpper();  // 获取头像文字
     avatarLabel->setText(avatarText);  // 设置头像标签文本
     avatarLabel->setAlignment(Qt::AlignCenter);  // 设置头像标签居中
@@ -199,15 +188,12 @@ void MainWindow::SetupTopBar(QVBoxLayout* mainLayout){
         "   background-color: #FFFFFF;"
         "}"
     );  // 设置搜索框样式
-    // 回车键被按下后，自动触发自带的信号，自动调用槽函数
-    connect(searchLineEdit, &QLineEdit::returnPressed, this, &MainWindow::OnSearchReturnPressed);
 
     topLayout->addWidget(avatarLabel);  // 添加头像标签
     topLayout->addWidget(usernameLabel);  // 添加用户名标签
     topLayout->addWidget(statusIndicator);  // 添加在线状态指示灯
     topLayout->addStretch();  // 添加弹性空间
     topLayout->addWidget(searchLineEdit);  // 添加搜索框
-
     mainLayout->addWidget(topBar);  // 添加顶部栏
 }
 
@@ -244,11 +230,7 @@ void MainWindow::SetupLeftPanel(QHBoxLayout* centralLayout){
         "}"
     );  // 设置好友列表样式
     friendListWidget->setContextMenuPolicy(Qt::CustomContextMenu);  // 设置右键菜单策略
-    // 右键菜单请求后，自动触发自带的信号，自动调用槽函数
-    connect(friendListWidget, &QListWidget::customContextMenuRequested, this, &MainWindow::OnFriendListContextMenu);
-
     leftLayout->addWidget(friendListWidget);  // 添加好友列表控件
-
     centralLayout->addWidget(leftPanel);  // 添加左侧面板
 }
 
@@ -258,7 +240,6 @@ void MainWindow::SetupLeftPanel(QHBoxLayout* centralLayout){
  */
 void MainWindow::SetupContentArea(QHBoxLayout* centralLayout){
     contentStack = new QStackedWidget();  // 创建内容区域堆栈控件
-
     // 欢迎页
     QWidget* welcomePage = new QWidget();  // 创建欢迎页控件
     QVBoxLayout* welcomeLayout = new QVBoxLayout(welcomePage);  // 创建欢迎页垂直布局
@@ -268,13 +249,10 @@ void MainWindow::SetupContentArea(QHBoxLayout* centralLayout){
     welcomeLabel->setStyleSheet("font-size: 24px; font-weight: bold; color: #333333;");  // 设置欢迎标签样式
     welcomeLayout->addWidget(welcomeLabel);  // 添加欢迎标签
     contentStack->addWidget(welcomePage);  // 添加欢迎页
-
     // 聊天页
-    SetupChatPage();  // 设置聊天页
+    SetupChatPage();
     contentStack->addWidget(chatPage);  // 添加聊天页
-
     contentStack->setCurrentIndex(0);  // 默认显示欢迎页
-
     centralLayout->addWidget(contentStack);  // 添加内容区域
 }
 
@@ -368,12 +346,8 @@ void MainWindow::SetupChatPage(){
         "   background-color: #0B98C2;"
         "}"
     );  // 设置发送按钮样式
-    // 发送按钮被点击后，自动触发自带的信号，自动调用槽函数
-    connect(sendButton, &QPushButton::clicked, this, &MainWindow::OnSendMessageClicked);
-
     inputLayout->addWidget(messageInput);  // 添加消息输入框
     inputLayout->addWidget(sendButton);  // 添加发送按钮
-
     chatLayout->addWidget(inputArea);  // 添加输入区域
 }
 
@@ -404,8 +378,6 @@ void MainWindow::SetupBottomBar(QVBoxLayout* mainLayout){
         "   color: #FF4D4F;"
         "}"
     );  // 设置删除好友按钮样式
-    // 删除好友按钮被点击后，自动触发自带的信号，自动调用槽函数
-    connect(deleteFriendButton, &QPushButton::clicked, this, &MainWindow::OnDeleteFriendClicked);
 
     refreshListButton = new QPushButton("刷新列表");  // 创建刷新列表按钮
     refreshListButton->setStyleSheet(
@@ -422,13 +394,10 @@ void MainWindow::SetupBottomBar(QVBoxLayout* mainLayout){
         "   color: #12B7F5;"
         "}"
     );  // 设置刷新列表按钮样式
-    // 刷新列表按钮被点击后，自动触发自带的信号，自动调用槽函数
-    connect(refreshListButton, &QPushButton::clicked, this, &MainWindow::OnRefreshListClicked);
 
     bottomLayout->addStretch();  // 添加弹性空间
     bottomLayout->addWidget(deleteFriendButton);  // 添加删除好友按钮
     bottomLayout->addWidget(refreshListButton);  // 添加刷新列表按钮
-
     mainLayout->addWidget(bottomBar);  // 添加底部操作栏
 }
 

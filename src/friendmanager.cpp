@@ -15,6 +15,7 @@
 FriendManager::FriendManager(NetworkManager* networkManager, QObject *parent)
     : QObject(parent)
     , networkManager(networkManager)
+    , isFetchingFriendList(false)
 {
     // 数据接收后，手动触发自定义信号，自动调用槽函数
     connect(networkManager, &NetworkManager::DataReceived, this, &FriendManager::OnDataReceived);
@@ -72,6 +73,10 @@ bool FriendManager::DeleteFriend(const QString& username){
  * @return 是否成功发送获取请求
  */
 bool FriendManager::GetFriendList(){
+    if(isFetchingFriendList){
+        return true;  // 正在获取好友列表，跳过重复请求
+    }
+    isFetchingFriendList = true;
     QJsonObject dataObj;  // 获取请求数据对象
     QJsonObject requestObj;  // 获取请求对象
     requestObj["type"] = "FRIEND_LIST";  // 获取请求类型
@@ -80,6 +85,7 @@ bool FriendManager::GetFriendList(){
     QByteArray requestData = doc.toJson(QJsonDocument::Compact);  // 将JSON文档转换为字节数组
     bool sendResult = networkManager->SendData(requestData);
     if(!sendResult){
+        isFetchingFriendList = false;
         emit FriendListFailed("发送数据失败");  // 手动触发自定义获取失败信号，通知UI层
         return false;
     }
@@ -238,6 +244,7 @@ void FriendManager::HandleDeleteFriendResponse(const QJsonObject& response){
  * @param response 响应JSON对象
  */
 void FriendManager::HandleFriendListResponse(const QJsonObject& response){
+    isFetchingFriendList = false;
     int code = response["code"].toInt();  // 从响应对象中提取状态码字段
     switch(code){
         case 0:{

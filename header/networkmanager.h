@@ -23,6 +23,7 @@ public:
     void SetTimeout(int seconds);
     QString GetServerIP() const;
     int GetServerPort() const;
+    bool WasClosedByRemoteHost() const;
 
 signals:
     void Connected();
@@ -46,6 +47,7 @@ private:
     int serverPort;    // 服务器端口号
     bool isConnected;  // 连接状态
     int timeout;       // 连接超时时间
+    bool wasClosedByRemoteHost;  // 是否由远程主机关闭连接
     QByteArray receiveBuffer;  // 接收缓冲区
 };
 
