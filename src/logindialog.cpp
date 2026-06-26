@@ -1,6 +1,7 @@
 #include "logindialog.h"
 #include "ui_logindialog.h"
 #include "usermanager.h"
+#include "clientlogger.h"
 
 #include <QMessageBox>
 #include <QKeyEvent>
@@ -19,7 +20,7 @@ LoginDialog::LoginDialog(UserManager* userManager, QWidget *parent)
     , timeoutTimer(new QTimer(this))
 {
     ui->setupUi(this);  // 初始化登录对话框（UI界面）
-    SetupUI();  // 设置登录对话框（UI界面）样式
+    SetupUI();
 
     // 登录按钮被点击后，自动触发自带的信号，自动调用槽函数
     connect(ui->loginButton, &QPushButton::clicked, this, &LoginDialog::OnLoginClicked);
@@ -37,7 +38,7 @@ LoginDialog::LoginDialog(UserManager* userManager, QWidget *parent)
  * @brief LoginDialog析构函数，用于释放动态分配的资源
  */
 LoginDialog::~LoginDialog(){
-    delete ui;  // 释放登录对话框（UI界面）的指针
+    delete ui;
 }
 
 /**
@@ -135,9 +136,9 @@ void LoginDialog::ShowBusyMessage(){
  * @param event 按键事件
  */
 void LoginDialog::keyPressEvent(QKeyEvent* event){
-    if(event->key() == Qt::Key_Return || event->key() == Qt::Key_Enter){
-        if(ui->usernameLineEdit->hasFocus()){
-            ui->passwordLineEdit->setFocus();
+    if(event->key() == Qt::Key_Return || event->key() == Qt::Key_Enter){  // 如果按下Enter键
+        if(ui->usernameLineEdit->hasFocus()){  // 如果用户名文本框有焦点
+            ui->passwordLineEdit->setFocus();  // 转换焦点到密码文本框
             return;
         }
         if(ui->passwordLineEdit->hasFocus()){
@@ -145,94 +146,84 @@ void LoginDialog::keyPressEvent(QKeyEvent* event){
             return;
         }
     }
-    QDialog::keyPressEvent(event);
+    QDialog::keyPressEvent(event);  // 调用父类的按键事件处理函数
 }
 
 /**
- * @brief 登录按钮被点击后，自动触发自带的信号，自动调用槽函数
+ * @brief 槽函数，用于响应登录按钮被点击后自动触发自带的信号
  */
 void LoginDialog::OnLoginClicked(){
-    if(isProcessing){  // 如果正在处理登录请求
-        qDebug() << "[LoginDialog::OnLoginClicked]正在处理登录请求, 请稍后";
-        ShowBusyMessage();  // 信息弹窗
+    if(isProcessing){
+        ClientLogger::GetInstance().WriteLog(LogLevel::ERROR, "LoginDialog", "正在验证输入信息格式, 请稍后");
+        ShowBusyMessage();
         return;
     }
     QString username = ui->usernameLineEdit->text().trimmed();  // 获取用户名文本框的内容并去掉首尾空格
     QString password = ui->passwordLineEdit->text();  // 获取密码文本框的内容
     if(username.isEmpty() || password.isEmpty()){  // 如果用户名或密码为空
-        qDebug() << "[LoginDialog::OnLoginClicked]用户名或密码不能为空";
+        ClientLogger::GetInstance().WriteLog(LogLevel::ERROR, "LoginDialog", "登录失败, 用户名或密码不能为空");
         QMessageBox::warning(this, "错误", "用户名或密码不能为空");  // 错误弹窗
         return;
     }
-    isProcessing = true;  // 设置登录请求状态
+    isProcessing = true;
     ui->loginButton->setEnabled(false);  // 禁用登录按钮
     ui->registerButton->setEnabled(false);  // 禁用注册按钮
     timeoutTimer->start(5000);  // 启动5秒时间定时器
-    qDebug() << "[LoginDialog::OnLoginClicked]客户端发送登录请求到服务器";
-    userManager->LoginUser(username, password);  // 登录
+    bool loginResult = userManager->LoginUser(username, password);
+    if(loginResult){
+        ClientLogger::GetInstance().WriteLog(LogLevel::INFO, "LoginDialog", "发送登录请求成功");
+    }
+    else{
+        ClientLogger::GetInstance().WriteLog(LogLevel::ERROR, "LoginDialog", "发送登录请求失败");
+    }
 }
 
 /**
- * @brief 注册按钮被点击后，自动触发自带的信号，自动调用槽函数
+ * @brief 槽函数，用于响应注册按钮被点击后自动触发自带的信号
  */
 void LoginDialog::OnRegisterClicked(){
-    if(isProcessing){  // 如果正在处理登录请求
-        qDebug() << "[LoginDialog::OnRegisterClicked]正在处理登录请求, 请稍后";
-        ShowBusyMessage();  // 信息弹窗
+    if(isProcessing){
+        ClientLogger::GetInstance().WriteLog(LogLevel::ERROR, "LoginDialog", "正在验证输入信息格式, 请稍后");
+        ShowBusyMessage();
         return;
     }
-    qDebug() << "[LoginDialog::OnRegisterClicked]进入注册页面";
+    ClientLogger::GetInstance().WriteLog(LogLevel::INFO, "LoginDialog", "进入注册页面");
     done(2);  // 关闭登录对话框并返回注册页面
 }
 
 /**
- * @brief 时间定时器超时后，自动触发自带的信号，自动调用槽函数
+ * @brief 槽函数，用于响应时间定时器超时后自动触发自带的信号
  */
 void LoginDialog::OnLoginTimeout(){
     timeoutTimer->stop();  // 停止时间定时器
-    isProcessing = false;  // 设置登录请求状态
+    isProcessing = false;
     ui->loginButton->setEnabled(true);  // 启用登录按钮
     ui->registerButton->setEnabled(true);  // 启用注册按钮
     QMessageBox::warning(this, "错误", "请求超时");  // 错误弹窗
-    qDebug() << "[LoginDialog::OnLoginTimeout]时间定时器超时后自动调用槽函数";  // Debug输出
+    ClientLogger::GetInstance().WriteLog(LogLevel::ERROR, "LoginDialog", "时间定时器超时后自动调用槽函数");
 }
 
 /**
- * @brief 登录成功后，手动触发自定义信号，自动调用槽函数
+ * @brief 槽函数，用于响应登录成功后手动触发的自定义信号
  */
 void LoginDialog::OnLoginSuccess(){
     timeoutTimer->stop();  // 停止时间定时器
-    isProcessing = false;  // 设置登录请求状态
-    qDebug() << "[LoginDialog::OnLoginSuccess]客户端接收登录成功响应,登录成功";
+    isProcessing = false;
+    ui->loginButton->setEnabled(true);  // 启用登录按钮
+    ui->registerButton->setEnabled(true);  // 启用注册按钮
+    ClientLogger::GetInstance().WriteLog(LogLevel::INFO, "LoginDialog", "登录成功");
     accept();  // 接受登录成功信号
 }
 
 /**
- * @brief 登录失败后，手动触发自定义信号，自动调用槽函数
+ * @brief 槽函数，用于响应登录失败后手动触发的自定义信号
  * @param errorMsg 错误信息
  */
 void LoginDialog::OnLoginFailed(const QString& errorMsg){
     timeoutTimer->stop();  // 停止时间定时器
-    isProcessing = false;  // 设置登录请求状态
+    isProcessing = false;
     ui->loginButton->setEnabled(true);  // 启用登录按钮
     ui->registerButton->setEnabled(true);  // 启用注册按钮
-    if(errorMsg == "该用户不存在"){
-        QMessageBox::warning(this, "错误", "该用户不存在");
-    }
-    else if(errorMsg == "用户名或密码错误"){
-        QMessageBox::warning(this, "错误", "用户名或密码错误");
-    }
-    else if(errorMsg == "该账号已在其他地方登录"){
-        QMessageBox::warning(this, "错误", "该账号已在其他地方登录");
-    }
-    else if(errorMsg == "服务器接收请求失败"){
-        QMessageBox::warning(this, "错误", "服务器接收请求失败");
-    }
-    else if(errorMsg == "服务器罢工了..."){
-        QMessageBox::warning(this, "错误", "服务器罢工了...");
-    }
-    else{
-        QMessageBox::warning(this, "错误", errorMsg);
-    }
-    qDebug() << "[LoginDialog::OnLoginFailed]客户端接收登录失败响应, 错误信息: " << errorMsg;
+    QMessageBox::warning(this, "错误", errorMsg);  // 错误弹窗
+    ClientLogger::GetInstance().WriteLog(LogLevel::ERROR, "LoginDialog", "登录失败, " + errorMsg);
 }

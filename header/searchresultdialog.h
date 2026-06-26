@@ -8,10 +8,13 @@
 
 #include "usermanager.h"
 
+/**
+ * @brief 好友管理器的类声明
+ */
 class FriendManager;
 
 /**
- * @brief 搜索结果对话框，用于显示查询到的用户信息并提供添加好友功能
+ * @brief 搜索结果对话框，用于查询用户并提供添加好友
  */
 class SearchResultDialog : public QDialog{
     Q_OBJECT
@@ -21,6 +24,9 @@ public:
     ~SearchResultDialog() override;
     void SetResultInfo(const QString& username, UserStatus status);
     void SetViewOnlyMode(bool viewOnly);
+
+protected:
+    void closeEvent(QCloseEvent* event) override;
 
 private slots:
     void OnAddFriendClicked();
@@ -41,7 +47,7 @@ private:
     QLabel* statusIndicator;  // 状态指示器标签的指针
     QPushButton* addFriendButton;  // 添加好友按钮的指针
     QPushButton* closeButton;  // 关闭按钮的指针
-    bool isProcessing;  // 添加好友请求状态
+    bool isProcessing;  // UI界面处理状态
     QTimer* timeoutTimer;  // 时间定时器的指针
     QString queriedUsername;  // 查询到的用户名
 };

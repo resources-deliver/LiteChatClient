@@ -5,8 +5,11 @@
 #include "networkmanager.h"
 #include "usermanager.h"
 #include "friendmanager.h"
+#include "messagemanager.h"
+#include "clientlogger.h"
 
 #include <QApplication>
+#include <QDir>
 
 #ifdef Q_OS_WIN
 #include <windows.h>
@@ -24,9 +27,15 @@ int main(int argc, char *argv[]){
 #endif
     QApplication a(argc, argv);
     qInstallMessageHandler(customMessageHandler);
+
+    QString logDir = QCoreApplication::applicationDirPath() + "/logs";
+    ClientLogger::GetInstance().InitLogger(logDir);
+    ClientLogger::GetInstance().WriteLog(LogLevel::INFO, "Main", "LiteChat客户端启动");
+
     NetworkManager networkManager;
     UserManager userManager(&networkManager);
     FriendManager friendManager(&networkManager);
+    MessageManager messageManager(&networkManager, &friendManager);
     ConnectDialog connectDlg(&networkManager);
 
     if(connectDlg.exec() == QDialog::Accepted){
@@ -34,7 +43,8 @@ int main(int argc, char *argv[]){
             LoginDialog loginDlg(&userManager);
             int loginResult = loginDlg.exec();
             if(loginResult == QDialog::Accepted){
-                MainWindow* w = new MainWindow(&networkManager, &userManager, &friendManager);
+                messageManager.SetCurrentUsername(userManager.GetCurrentUsername());
+                MainWindow* w = new MainWindow(&networkManager, &userManager, &friendManager, &messageManager);
                 w->show();
                 return QApplication::exec();
             }

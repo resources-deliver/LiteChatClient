@@ -25,6 +25,9 @@ qt_add_executable(LiteChatClient
     src/userinfodialog.cpp
     src/friendmanager.cpp
     src/searchresultdialog.cpp
+    src/messagemanager.cpp
+    src/clientlogger.cpp
+    src/exceptionhandler.cpp
     header/mainwindow.h
     header/networkmanager.h
     header/connectdialog.h
@@ -34,6 +37,9 @@ qt_add_executable(LiteChatClient
     header/userinfodialog.h
     header/friendmanager.h
     header/searchresultdialog.h
+    header/messagemanager.h
+    header/clientlogger.h
+    header/exceptionhandler.h
     ui/mainwindow.ui
     ui/connectdialog.ui
     ui/logindialog.ui

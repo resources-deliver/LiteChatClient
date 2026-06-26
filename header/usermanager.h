@@ -4,18 +4,18 @@
 #include <QObject>
 #include <QString>
 
+/**
+ * @brief 网络管理器的类声明
+ */
 class NetworkManager;
 
 /**
  * @brief 用户状态枚举
  */
-enum class UserStatus{
-    Online,
-    Offline
-};
+enum class UserStatus{Online, Offline};
 
 /**
- * @brief 用户管理器类，负责用户注册、登录、信息修改和状态管理
+ * @brief 用户管理器类，用于注册、登录、信息修改和状态管理
  */
 class UserManager : public QObject{
     Q_OBJECT
