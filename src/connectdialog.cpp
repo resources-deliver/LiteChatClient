@@ -1,6 +1,7 @@
 #include "connectdialog.h"
 #include "ui_connectdialog.h"
 #include "networkmanager.h"
+#include "clientlogger.h"
 
 #include <QMessageBox>
 #include <QRegularExpression>
@@ -122,17 +123,12 @@ void ConnectDialog::ShowBusyMessage(){
 }
 
 /**
- * @brief 执行连接请求操作
+ * @brief 执行连接服务器操作
  * @param ip 服务器IP地址
  */
 void ConnectDialog::PerformConnection(const QString& ip){
-    if(isProcessing){
-        qDebug() << "[ConnectDialog::PerformConnection]已经正在处理连接请求";
-        ShowBusyMessage();
-        return;
-    }
     if(!ValidateIP(ip)){
-        qDebug() << "[ConnectDialog::PerformConnection]IP地址格式不符合要求";
+        ClientLogger::GetInstance().WriteLog(LogLevel::ERROR, "ConnectDialog", "连接失败, IP地址格式不符合要求");
         QMessageBox::warning(this, "错误", "IP地址不符合格式");  // 错误弹窗
         return;
     }
@@ -141,28 +137,29 @@ void ConnectDialog::PerformConnection(const QString& ip){
     ui->skipButton->setEnabled(false);  // 禁用跳过按钮
     timeoutTimer->start(5000);  // 启动5秒时间定时器
     bool result = networkManager->ConnectToServer(ip, 8886);
-    if(!result){
-        timeoutTimer->stop();  // 停止时间定时器
-        isProcessing = false;
-        ui->connectButton->setEnabled(true);  // 启用连接按钮
-        ui->skipButton->setEnabled(true);  // 启用跳过按钮
-        qDebug() << "[ConnectDialog::PerformConnection]连接服务器请求失败";
-        return;
+    if(result){
+        ClientLogger::GetInstance().WriteLog(LogLevel::ERROR, "ConnectDialog", "发送连接请求成功");
     }
-    qDebug() << "[ConnectDialog::PerformConnection]连接服务器请求成功";
+    else{
+        ClientLogger::GetInstance().WriteLog(LogLevel::ERROR, "ConnectDialog", "发送连接请求失败");
+    }
 }
 
 /**
  * @brief 槽函数，用于响应连接按钮被点击后自动触发自带的信号
  */
 void ConnectDialog::OnConnectClicked(){
+    if(isProcessing){
+        ClientLogger::GetInstance().WriteLog(LogLevel::INFO, "ConnectDialog", "正在验证输入信息格式, 请稍后");
+        ShowBusyMessage();
+        return;
+    }
     QString ip = ui->ipLineEdit->text().trimmed();  // 获取IP地址输入框中的文本并去掉首尾空格
     if(ip.isEmpty()){  // 如果输入框IP地址为空
-        qDebug() << "[ConnectDialog::OnConnectClicked]输入框IP地址为空";
+        ClientLogger::GetInstance().WriteLog(LogLevel::ERROR, "ConnectDialog", "连接失败, 输入框IP地址为空");
         QMessageBox::warning(this, "错误", "请输入服务器IP地址");  // 错误弹窗
         return;
     }
-    qDebug() << "[ConnectDialog::OnConnectClicked]客户端发送连接请求到服务器";
     PerformConnection(ip);
 }
 
@@ -170,7 +167,11 @@ void ConnectDialog::OnConnectClicked(){
  * @brief 槽函数，用于响应跳过按钮被点击后自动触发自带的信号
  */
 void ConnectDialog::OnSkipClicked(){
-    qDebug() << "[ConnectDialog::OnSkipClicked]客户端发送连接请求到服务器";
+    if(isProcessing){
+        ClientLogger::GetInstance().WriteLog(LogLevel::INFO, "ConnectDialog", "正在验证输入信息格式, 请稍后");
+        ShowBusyMessage();
+        return;
+    }
     PerformConnection(DEFAULT_IP);
 }
 
@@ -183,7 +184,7 @@ void ConnectDialog::OnConnectionTimeout(){
     ui->connectButton->setEnabled(true);  // 启用连接按钮
     ui->skipButton->setEnabled(true);  // 启用跳过按钮
     QMessageBox::warning(this, "错误", "请求超时");  // 错误弹窗
-    qDebug() << "[ConnectDialog::OnConnectionTimeout]时间定时器超时后自动调用槽函数";
+    ClientLogger::GetInstance().WriteLog(LogLevel::ERROR, "ConnectDialog", "时间定时器超时后自动调用槽函数");
 }
 
 /**
@@ -192,7 +193,9 @@ void ConnectDialog::OnConnectionTimeout(){
 void ConnectDialog::OnConnected(){
     timeoutTimer->stop();  // 停止时间定时器
     isProcessing = false;
-    qDebug() << "[ConnectDialog::OnConnected]客户端接收连接成功响应";
+    ui->connectButton->setEnabled(true);  // 启用连接按钮
+    ui->skipButton->setEnabled(true);  // 启用跳过按钮
+    ClientLogger::GetInstance().WriteLog(LogLevel::INFO, "ConnectDialog", "连接成功");
     accept();  // 接受连接成功信号
 }
 
@@ -205,17 +208,6 @@ void ConnectDialog::OnError(const QString& errorMsg){
     isProcessing = false;
     ui->connectButton->setEnabled(true);  // 启用连接按钮
     ui->skipButton->setEnabled(true);  // 启用跳过按钮
-    if(errorMsg == "服务器下机了"){
-        QMessageBox::warning(this, "错误", "服务器下机了");  // 错误弹窗
-    }
-    else if(errorMsg.contains("接收请求失败")){
-        QMessageBox::warning(this, "错误", "服务器接收请求失败");
-    }
-    else if(errorMsg.contains("内部错误")){
-        QMessageBox::warning(this, "错误", "服务器罢工了...");
-    }
-    else{
-        QMessageBox::warning(this, "错误", errorMsg);
-    }
-    qDebug() << "[ConnectDialog::OnError]客户端接收连接失败响应, 错误信息: " << errorMsg;
+    QMessageBox::warning(this, "错误", errorMsg);  // 错误弹窗
+    ClientLogger::GetInstance().WriteLog(LogLevel::ERROR, "ConnectDialog", "连接失败, " + errorMsg);
 }

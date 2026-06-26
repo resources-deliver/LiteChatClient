@@ -40,7 +40,7 @@ private:
 private:
     Ui::RegisterDialog *ui;  // 注册对话框（UI界面）的指针
     UserManager* userManager;  // 用户管理器的指针
-    bool isProcessing;  // 注册请求状态
+    bool isProcessing;  // UI界面处理状态
     QTimer* timeoutTimer;  // 时间定时器的指针
     QString registeredUsername;  // 注册成功的用户名
 };

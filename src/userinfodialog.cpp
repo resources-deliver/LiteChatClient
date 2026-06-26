@@ -1,6 +1,7 @@
 #include "userinfodialog.h"
 #include "ui_userinfodialog.h"
 #include "usermanager.h"
+#include "clientlogger.h"
 
 #include <QMessageBox>
 #include <QInputDialog>
@@ -155,8 +156,13 @@ void UserInfoDialog::ShowVerifyPasswordDialog(){
         ui->saveButton->setEnabled(false);  // 禁用保存修改按钮
         ui->cancelButton->setEnabled(false);  // 禁用取消按钮
         timeoutTimer->start(5000);  // 启动5秒时间定时器
-        userManager->UpdateUserInfo(pendingNewUsername, pendingNewPassword, verifyPassword);
-        qDebug() << "[UserInfoDialog::ShowVerifyPasswordDialog]更新用户信息请求成功";
+        bool correctResult = userManager->UpdateUserInfo(pendingNewUsername, pendingNewPassword, verifyPassword);
+        if(correctResult){
+            ClientLogger::GetInstance().WriteLog(LogLevel::INFO, "UserInfoDialog", "发送修改请求成功");
+        }
+        else{
+            ClientLogger::GetInstance().WriteLog(LogLevel::ERROR, "UserInfoDialog", "发送修改请求失败");
+        }
     }
 }
 
@@ -165,7 +171,7 @@ void UserInfoDialog::ShowVerifyPasswordDialog(){
  */
 void UserInfoDialog::OnSaveClicked(){
     if(isProcessing){
-        qDebug() << "[UserInfoDialog::OnSaveClicked]正在处理更新请求, 请稍后";
+        ClientLogger::GetInstance().WriteLog(LogLevel::INFO, "UserInfoDialog", "正在验证输入信息格式, 请稍后");
         ShowBusyMessage();
         return;
     }
@@ -173,16 +179,15 @@ void UserInfoDialog::OnSaveClicked(){
     pendingNewPassword = ui->newPasswordLineEdit->text();  // 获取新密码文本框中的文本
     QString confirmPassword = ui->confirmPasswordLineEdit->text();  // 获取确认新密码文本框中的文本
     if(pendingNewUsername.isEmpty() && pendingNewPassword.isEmpty()){  // 如果用户名和密码都为空
-        qDebug() << "[UserInfoDialog::OnSaveClicked]未修改任何信息";
+        ClientLogger::GetInstance().WriteLog(LogLevel::ERROR, "UserInfoDialog", "修改失败, 未修改任何信息");
         QMessageBox::warning(this, "错误", "未修改任何信息");  // 错误弹窗
         return;
     }
     if(!pendingNewPassword.isEmpty() && pendingNewPassword != confirmPassword){  // 如果新密码不为空且新密码和确认新密码不一致
-        qDebug() << "[UserInfoDialog::OnSaveClicked]两次输入的密码不一致";
+        ClientLogger::GetInstance().WriteLog(LogLevel::ERROR, "UserInfoDialog", "修改失败, 两次输入的密码不一致");
         QMessageBox::warning(this, "错误", "两次输入的密码不一致");
         return;
     }
-    qDebug() << "[UserInfoDialog::OnSaveClicked]客户端发送更新用户信息请求到服务器";
     ShowVerifyPasswordDialog();
 }
 
@@ -191,11 +196,11 @@ void UserInfoDialog::OnSaveClicked(){
  */
 void UserInfoDialog::OnCancelClicked(){
     if(isProcessing){
-        qDebug() << "[UserInfoDialog::OnCancelClicked]正在处理更新请求, 请稍后";
+        ClientLogger::GetInstance().WriteLog(LogLevel::INFO, "UserInfoDialog", "正在验证输入信息格式, 请稍后");
         ShowBusyMessage();
         return;
     }
-    qDebug() << "[UserInfoDialog::OnCancelClicked]用户点击了取消按钮";
+    ClientLogger::GetInstance().WriteLog(LogLevel::INFO, "UserInfoDialog", "用户点击了取消按钮");
     reject();  // 关闭个人信息对话框
 }
 
@@ -208,7 +213,7 @@ void UserInfoDialog::OnUpdateTimeout(){
     ui->saveButton->setEnabled(true);  // 启用保存修改按钮
     ui->cancelButton->setEnabled(true);  // 启用取消按钮
     QMessageBox::warning(this, "错误", "请求超时");  // 错误弹窗
-    qDebug() << "[UserInfoDialog::OnUpdateTimeout]时间定时器超时后自动调用槽函数";
+    ClientLogger::GetInstance().WriteLog(LogLevel::ERROR, "UserInfoDialog", "时间定时器超时后自动调用槽函数");
 }
 
 /**
@@ -220,7 +225,7 @@ void UserInfoDialog::OnUpdateSuccess(){
     ui->saveButton->setEnabled(true);  // 启用保存修改按钮
     ui->cancelButton->setEnabled(true);  // 启用取消按钮
     QMessageBox::information(this, "成功", "修改成功");  // 信息弹窗
-    qDebug() << "[UserInfoDialog::OnUpdateSuccess]客户端接收更新成功响应,更新成功";
+    ClientLogger::GetInstance().WriteLog(LogLevel::INFO, "UserInfoDialog", "修改成功");
     accept();  // 接受更新成功信号
 }
 
@@ -233,20 +238,6 @@ void UserInfoDialog::OnUpdateFailed(const QString& errorMsg){
     isProcessing = false;
     ui->saveButton->setEnabled(true);  // 启用保存修改按钮
     ui->cancelButton->setEnabled(true);  // 启用取消按钮
-    if(errorMsg == "验证密码错误"){
-        QMessageBox::warning(this, "错误", "验证密码错误");  // 错误弹窗
-    }
-    else if(errorMsg == "用户名已存在"){
-        QMessageBox::warning(this, "错误", "用户名已存在");
-    }
-    else if(errorMsg == "服务器接收请求失败"){
-        QMessageBox::warning(this, "错误", "服务器接收请求失败");
-    }
-    else if(errorMsg == "服务器罢工了..."){
-        QMessageBox::warning(this, "错误", "服务器罢工了...");
-    }
-    else{
-        QMessageBox::warning(this, "错误", errorMsg);
-    }
-    qDebug() << "[UserInfoDialog::OnUpdateFailed]客户端接收更新失败响应, 错误信息:" << errorMsg;
+    QMessageBox::warning(this, "错误", errorMsg);  // 错误弹窗
+    ClientLogger::GetInstance().WriteLog(LogLevel::ERROR, "UserInfoDialog", "修改失败, " + errorMsg);
 }

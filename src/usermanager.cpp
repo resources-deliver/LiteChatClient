@@ -1,5 +1,6 @@
 #include "usermanager.h"
 #include "networkmanager.h"
+#include "clientlogger.h"
 
 #include <QCryptographicHash>
 #include <QJsonDocument>
@@ -54,10 +55,9 @@ bool UserManager::RegisterUser(const QString& username, const QString& password)
     QByteArray requestData = doc.toJson(QJsonDocument::Compact);  // 将JSON文档转换为字节数组
     bool sendResult = networkManager->SendData(requestData);
     if(!sendResult){
-        emit RegisterFailed("注册失败");
+        emit RegisterFailed("发送数据失败");
         return false;
     }
-    qDebug() << "[UserManager::RegisterUser]注册请求发送成功";
     return true;
 }
 
@@ -90,10 +90,9 @@ bool UserManager::LoginUser(const QString& username, const QString& password){
     currentUsername = username;
     bool sendResult = networkManager->SendData(requestData);
     if(!sendResult){
-        emit LoginFailed("登录失败");
+        emit LoginFailed("发送数据失败");
         return false;
     }
-    qDebug() << "[UserManager::LoginUser]登录请求发送成功";
     return true;
 }
 
@@ -136,10 +135,9 @@ bool UserManager::UpdateUserInfo(const QString& newUsername, const QString& newP
     QByteArray requestData = doc.toJson(QJsonDocument::Compact);  // 将JSON文档转换为字节数组
     bool sendResult = networkManager->SendData(requestData);
     if(!sendResult){
-        emit UpdateFailed("更新失败");
+        emit UpdateFailed("发送数据失败");
         return false;
     }
-    qDebug() << "[UserManager::UpdateUserInfo]更新请求发送成功";
     return true;
 }
 
@@ -157,10 +155,10 @@ UserStatus UserManager::QueryUserStatus(){
     QByteArray requestData = doc.toJson(QJsonDocument::Compact);  // 将JSON文档转换为字节数组
     bool sendResult = networkManager->SendData(requestData);
     if(!sendResult){
-        qDebug() << "[UserManager::QueryUserStatus]发送请求失败";
+        ClientLogger::GetInstance().WriteLog(LogLevel::ERROR, "UserManager", "发送数据失败");        
         return UserStatus();
     }
-    qDebug() << "[UserManager::QueryUserStatus]发送请求成功";
+    ClientLogger::GetInstance().WriteLog(LogLevel::INFO, "UserManager", "发送数据成功");
     return currentUserStatus;
 }
 
@@ -237,12 +235,12 @@ void UserManager::OnDataReceived(const QByteArray& data){
     QJsonParseError parseError;  // JSON解析错误对象
     QJsonDocument doc = QJsonDocument::fromJson(data, &parseError);  // 将字节数组转换为JSON文档
     if(parseError.error != QJsonParseError::NoError){  // 如果解析失败
-        qDebug() << "[UserManager::OnDataReceived]JSON解析失败" << parseError.errorString();
+        ClientLogger::GetInstance().WriteLog(LogLevel::ERROR, "UserManager", "JSON解析失败:" + parseError.errorString());
         return;
     }
     QJsonObject response = doc.object();  // 从JSON文档中提取响应对象
     QString type = response["type"].toString();  // 从响应对象中提取类型字段
-    qDebug() << "[UserManager::OnDataReceived]接收到响应数据，类型:" << type;
+    ClientLogger::GetInstance().WriteLog(LogLevel::INFO, "UserManager", "接收到响应数据，类型:" + type);
     if(type == "REGISTER_RESPONSE"){
         HandleRegisterResponse(response);
     }
@@ -266,7 +264,7 @@ void UserManager::OnDataReceived(const QByteArray& data){
         // 好友相关响应由FriendManager处理，此处忽略
     }
     else{
-        qDebug() << "[UserManager::OnDataReceived]未知的响应类型:" << type;
+        ClientLogger::GetInstance().WriteLog(LogLevel::ERROR, "UserManager", "未知的响应类型:" + type);
     }
 }
 

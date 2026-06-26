@@ -1,5 +1,6 @@
 #include "searchresultdialog.h"
 #include "friendmanager.h"
+#include "clientlogger.h"
 
 #include <QVBoxLayout>
 #include <QHBoxLayout>
@@ -168,7 +169,7 @@ void SearchResultDialog::ShowBusyMessage(){
  */
 void SearchResultDialog::OnAddFriendClicked(){
     if(isProcessing){
-        qDebug() << "[SearchResultDialog::OnAddFriendClicked]正在处理添加好友请求, 请稍后";
+        ClientLogger::GetInstance().WriteLog(LogLevel::ERROR, "SearchResultDialog", "正在验证输入信息格式, 请稍后");
         ShowBusyMessage();
         return;
     }
@@ -177,8 +178,13 @@ void SearchResultDialog::OnAddFriendClicked(){
     addFriendButton->setEnabled(false);  // 禁用添加好友按钮
     closeButton->setEnabled(false);  // 禁用关闭按钮
     timeoutTimer->start(5000);  // 启动5秒时间定时器
-    qDebug() << "[SearchResultDialog::OnAddFriendClicked]客户端发送添加好友请求到服务器";
-    friendManager->AddFriend(queriedUsername);
+    bool addResult = friendManager->AddFriend(queriedUsername);
+    if(addResult){
+        ClientLogger::GetInstance().WriteLog(LogLevel::INFO, "SearchResultDialog", "发送添加请求成功");
+    }
+    else{
+        ClientLogger::GetInstance().WriteLog(LogLevel::ERROR, "SearchResultDialog", "发送添加请求失败");
+    }
 }
 
 /**
@@ -186,11 +192,11 @@ void SearchResultDialog::OnAddFriendClicked(){
  */
 void SearchResultDialog::OnCloseClicked(){
     if(isProcessing){
-        qDebug() << "[SearchResultDialog::OnCloseClicked]正在处理添加好友请求, 请稍后";
+        ClientLogger::GetInstance().WriteLog(LogLevel::ERROR, "SearchResultDialog", "正在验证输入信息格式, 请稍后");
         ShowBusyMessage();
         return;
     }
-    qDebug() << "[SearchResultDialog::OnCloseClicked]用户点击了关闭按钮";
+    ClientLogger::GetInstance().WriteLog(LogLevel::INFO, "SearchResultDialog", "用户点击了关闭按钮");
     reject();  // 关闭对话框
 }
 
@@ -216,7 +222,7 @@ void SearchResultDialog::OnAddFriendTimeout(){
     addFriendButton->setEnabled(true);  // 启用添加好友按钮
     closeButton->setEnabled(true);  // 启用关闭按钮
     QMessageBox::warning(this, "错误", "请求超时");  // 错误弹窗
-    qDebug() << "[SearchResultDialog::OnAddFriendTimeout]时间定时器超时后自动调用槽函数";
+    ClientLogger::GetInstance().WriteLog(LogLevel::ERROR, "SearchResultDialog", "时间定时器超时后自动调用槽函数");
 }
 
 /**
@@ -232,7 +238,7 @@ void SearchResultDialog::OnFriendAdded(const QString& username){
     addFriendButton->setEnabled(true);  // 启用添加好友按钮
     closeButton->setEnabled(true);  // 启用关闭按钮
     QMessageBox::information(this, "成功", "添加好友成功");  // 信息弹窗
-    qDebug() << "[SearchResultDialog::OnFriendAdded]客户端接收添加好友成功响应,添加成功";
+    ClientLogger::GetInstance().WriteLog(LogLevel::INFO, "SearchResultDialog", "添加成功");
     accept();  // 接受添加成功信号
 }
 
@@ -248,23 +254,6 @@ void SearchResultDialog::OnFriendAddFailed(const QString& errorMsg){
     isProcessing = false;
     addFriendButton->setEnabled(true);  // 启用添加好友按钮
     closeButton->setEnabled(true);  // 启用关闭按钮
-    if(errorMsg == "该用户不存在"){
-        QMessageBox::warning(this, "错误", "该用户不存在");  // 错误弹窗
-    }
-    else if(errorMsg == "对方已是您的好友"){
-        QMessageBox::information(this, "提示", "对方已是您的好友");
-    }
-    else if(errorMsg == "怎么能添加自己呢"){
-        QMessageBox::warning(this, "错误", "怎么能添加自己呢");
-    }
-    else if(errorMsg == "服务器接收请求失败"){
-        QMessageBox::warning(this, "错误", "服务器接收请求失败");
-    }
-    else if(errorMsg == "服务器罢工了..."){
-        QMessageBox::warning(this, "错误", "服务器罢工了...");
-    }
-    else{
-        QMessageBox::warning(this, "错误", errorMsg);
-    }
-    qDebug() << "[SearchResultDialog::OnFriendAddFailed]客户端接收添加好友失败响应, 错误信息:" << errorMsg;
+    QMessageBox::warning(this, "错误", errorMsg);  // 错误弹窗
+    ClientLogger::GetInstance().WriteLog(LogLevel::ERROR, "SearchResultDialog", "添加失败, " + errorMsg);
 }

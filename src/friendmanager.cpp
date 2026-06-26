@@ -40,10 +40,9 @@ bool FriendManager::AddFriend(const QString& username){
     QByteArray requestData = doc.toJson(QJsonDocument::Compact);  // 将JSON文档转换为字节数组
     bool sendResult = networkManager->SendData(requestData);
     if(!sendResult){
-        emit FriendAddFailed("添加失败");  // 手动触发自定义添加失败信号，通知UI层
+        emit FriendAddFailed("发送数据失败");  // 手动触发自定义添加失败信号，通知UI层
         return false;
     }
-    qDebug() << "[FriendManager::AddFriend]发送请求成功";
     return true;
 }
 
@@ -62,11 +61,9 @@ bool FriendManager::DeleteFriend(const QString& username){
     QByteArray requestData = doc.toJson(QJsonDocument::Compact);  // 将JSON文档转换为字节数组
     bool sendResult = networkManager->SendData(requestData);
     if(!sendResult){
-        qDebug() << "[FriendManager::DeleteFriend]发送请求失败";
-        emit FriendDeleteFailed("发送请求失败");  // 手动触发自定义删除失败信号，通知UI层
+        emit FriendDeleteFailed("发送数据失败");  // 手动触发自定义删除失败信号，通知UI层
         return false;
     }
-    qDebug() << "[FriendManager::DeleteFriend]发送请求成功";
     return true;
 }
 
@@ -83,11 +80,9 @@ bool FriendManager::GetFriendList(){
     QByteArray requestData = doc.toJson(QJsonDocument::Compact);  // 将JSON文档转换为字节数组
     bool sendResult = networkManager->SendData(requestData);
     if(!sendResult){
-        qDebug() << "[FriendManager::GetFriendList]发送请求失败";
-        emit FriendListFailed("发送请求失败");  // 手动触发自定义获取失败信号，通知UI层
+        emit FriendListFailed("发送数据失败");  // 手动触发自定义获取失败信号，通知UI层
         return false;
     }
-    qDebug() << "[FriendManager::GetFriendList]发送请求成功";
     return true;
 }
 
@@ -106,11 +101,9 @@ bool FriendManager::QueryFriendInfo(const QString& username){
     QByteArray requestData = doc.toJson(QJsonDocument::Compact);  // 将JSON文档转换为字节数组
     bool sendResult = networkManager->SendData(requestData);
     if(!sendResult){
-        qDebug() << "[FriendManager::QueryFriendInfo]发送请求失败";
-        emit QueryFriendFailed("发送请求失败");  // 手动触发自定义查询失败信号，通知UI层
+        emit QueryFriendFailed("发送数据失败");  // 手动触发自定义查询失败信号，通知UI层
         return false;
     }
-    qDebug() << "[FriendManager::QueryFriendInfo]发送请求成功";
     return true;
 }
 

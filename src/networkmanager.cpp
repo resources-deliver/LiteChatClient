@@ -1,4 +1,5 @@
 #include "networkmanager.h"
+#include "clientlogger.h"
 
 #include <QDataStream>
 #include <QTimer>
@@ -48,10 +49,9 @@ bool NetworkManager::ConnectToServer(const QString& ip, int port){
     socket->connectToHost(QHostAddress(ip), port);  // 连接到服务器
     bool result = socket->waitForConnected(timeout * 1000);  // 等待连接成功
     if(!result){
-        emit ErrorOccurred("连接超时");
+        ClientLogger::GetInstance().WriteLog(LogLevel::ERROR, "NetworkManager", "连接失败, 连接超时");
         return false;
     }
-    qDebug() << "[NetworkManager::ConnectToServer]连接成功IP地址:" << ip;
     return true;
 }
 
@@ -66,7 +66,7 @@ void NetworkManager::DisconnectFromServer(){
         }
     }
     receiveBuffer.clear();  // 清空接收缓冲区
-    qDebug() << "[NetworkManager::DisconnectFromServer]已断开与服务器的连接";
+    ClientLogger::GetInstance().WriteLog(LogLevel::INFO, "NetworkManager", "客户端已断开与服务器的连接");
 }
 
 /**
@@ -84,7 +84,7 @@ bool NetworkManager::IsConnected() const{
  */
 bool NetworkManager::SendData(const QByteArray& data){
     if(!isConnected){
-        emit ErrorOccurred("未连接到服务器,无法发送数据");  // 手动触发自定义连接错误信号，通知UI层
+        emit ErrorOccurred("未连接到服务器, 无法发送数据");  // 手动触发自定义连接错误信号，通知UI层
         return false;
     }
     QByteArray package = PackageMessage(data);
@@ -98,7 +98,7 @@ bool NetworkManager::SendData(const QByteArray& data){
         emit ErrorOccurred("发送超时");
         return false;
     }
-    qDebug() << "[NetworkManager::SendData]发送成功";
+    ClientLogger::GetInstance().WriteLog(LogLevel::INFO, "NetworkManager", "客户端发送数据长度:" + QString::number(bytesWritten));
     return true;
 }
 
@@ -157,12 +157,12 @@ void NetworkManager::OnReadyRead(){
             return;
         }
         if(receiveBuffer.size() < 4 + bodyLength){  // 若接收缓冲区数据量不足
-            qDebug() << "[NetworkManager::OnReadyRead]接收缓冲区数据量不足，等待更多数据";
+            ClientLogger::GetInstance().WriteLog(LogLevel::INFO, "NetworkManager", "客户端接收缓冲区数据量不足，等待更多数据");
             break;
         }
         QByteArray body = receiveBuffer.mid(4, bodyLength);  // 提取消息体
         receiveBuffer.remove(0, 4 + bodyLength);  // 移除已处理数据
-        qDebug() << "[NetworkManager::OnReadyRead]收到数据:" << body.toHex();  // Debug输出
+        ClientLogger::GetInstance().WriteLog(LogLevel::INFO, "NetworkManager", "客户端收到数据:" + body.toHex());
         emit DataReceived(body);  // 手动触发自定义数据接收信号，通知UI层
     }
 }

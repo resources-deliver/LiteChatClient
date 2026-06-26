@@ -1,6 +1,7 @@
 #include "logindialog.h"
 #include "ui_logindialog.h"
 #include "usermanager.h"
+#include "clientlogger.h"
 
 #include <QMessageBox>
 #include <QKeyEvent>
@@ -153,14 +154,14 @@ void LoginDialog::keyPressEvent(QKeyEvent* event){
  */
 void LoginDialog::OnLoginClicked(){
     if(isProcessing){
-        qDebug() << "[LoginDialog::OnLoginClicked]正在处理登录请求, 请稍后";
+        ClientLogger::GetInstance().WriteLog(LogLevel::ERROR, "LoginDialog", "正在验证输入信息格式, 请稍后");
         ShowBusyMessage();
         return;
     }
     QString username = ui->usernameLineEdit->text().trimmed();  // 获取用户名文本框的内容并去掉首尾空格
     QString password = ui->passwordLineEdit->text();  // 获取密码文本框的内容
     if(username.isEmpty() || password.isEmpty()){  // 如果用户名或密码为空
-        qDebug() << "[LoginDialog::OnLoginClicked]用户名或密码不能为空";
+        ClientLogger::GetInstance().WriteLog(LogLevel::ERROR, "LoginDialog", "登录失败, 用户名或密码不能为空");
         QMessageBox::warning(this, "错误", "用户名或密码不能为空");  // 错误弹窗
         return;
     }
@@ -168,8 +169,13 @@ void LoginDialog::OnLoginClicked(){
     ui->loginButton->setEnabled(false);  // 禁用登录按钮
     ui->registerButton->setEnabled(false);  // 禁用注册按钮
     timeoutTimer->start(5000);  // 启动5秒时间定时器
-    qDebug() << "[LoginDialog::OnLoginClicked]客户端发送登录请求到服务器";
-    userManager->LoginUser(username, password);
+    bool loginResult = userManager->LoginUser(username, password);
+    if(loginResult){
+        ClientLogger::GetInstance().WriteLog(LogLevel::INFO, "LoginDialog", "发送登录请求成功");
+    }
+    else{
+        ClientLogger::GetInstance().WriteLog(LogLevel::ERROR, "LoginDialog", "发送登录请求失败");
+    }
 }
 
 /**
@@ -177,11 +183,11 @@ void LoginDialog::OnLoginClicked(){
  */
 void LoginDialog::OnRegisterClicked(){
     if(isProcessing){
-        qDebug() << "[LoginDialog::OnRegisterClicked]正在处理登录请求, 请稍后";
+        ClientLogger::GetInstance().WriteLog(LogLevel::ERROR, "LoginDialog", "正在验证输入信息格式, 请稍后");
         ShowBusyMessage();
         return;
     }
-    qDebug() << "[LoginDialog::OnRegisterClicked]进入注册页面";
+    ClientLogger::GetInstance().WriteLog(LogLevel::INFO, "LoginDialog", "进入注册页面");
     done(2);  // 关闭登录对话框并返回注册页面
 }
 
@@ -194,7 +200,7 @@ void LoginDialog::OnLoginTimeout(){
     ui->loginButton->setEnabled(true);  // 启用登录按钮
     ui->registerButton->setEnabled(true);  // 启用注册按钮
     QMessageBox::warning(this, "错误", "请求超时");  // 错误弹窗
-    qDebug() << "[LoginDialog::OnLoginTimeout]时间定时器超时后自动调用槽函数";
+    ClientLogger::GetInstance().WriteLog(LogLevel::ERROR, "LoginDialog", "时间定时器超时后自动调用槽函数");
 }
 
 /**
@@ -203,7 +209,9 @@ void LoginDialog::OnLoginTimeout(){
 void LoginDialog::OnLoginSuccess(){
     timeoutTimer->stop();  // 停止时间定时器
     isProcessing = false;
-    qDebug() << "[LoginDialog::OnLoginSuccess]客户端接收登录成功响应,登录成功";
+    ui->loginButton->setEnabled(true);  // 启用登录按钮
+    ui->registerButton->setEnabled(true);  // 启用注册按钮
+    ClientLogger::GetInstance().WriteLog(LogLevel::INFO, "LoginDialog", "登录成功");
     accept();  // 接受登录成功信号
 }
 
@@ -216,23 +224,6 @@ void LoginDialog::OnLoginFailed(const QString& errorMsg){
     isProcessing = false;
     ui->loginButton->setEnabled(true);  // 启用登录按钮
     ui->registerButton->setEnabled(true);  // 启用注册按钮
-    if(errorMsg == "该用户不存在"){
-        QMessageBox::warning(this, "错误", "该用户不存在");  // 错误弹窗
-    }
-    else if(errorMsg == "用户名或密码错误"){
-        QMessageBox::warning(this, "错误", "用户名或密码错误");
-    }
-    else if(errorMsg == "该账号已在其他地方登录"){
-        QMessageBox::warning(this, "错误", "该账号已在其他地方登录");
-    }
-    else if(errorMsg == "服务器接收请求失败"){
-        QMessageBox::warning(this, "错误", "服务器接收请求失败");
-    }
-    else if(errorMsg == "服务器罢工了..."){
-        QMessageBox::warning(this, "错误", "服务器罢工了...");
-    }
-    else{
-        QMessageBox::warning(this, "错误", errorMsg);
-    }
-    qDebug() << "[LoginDialog::OnLoginFailed]客户端接收登录失败响应, 错误信息: " << errorMsg;
+    QMessageBox::warning(this, "错误", errorMsg);  // 错误弹窗
+    ClientLogger::GetInstance().WriteLog(LogLevel::ERROR, "LoginDialog", "登录失败, " + errorMsg);
 }
